@@ -1,38 +1,34 @@
 /*
  * Copyright (c) 2015-present, Facebook, Inc.
- * All rights reserved.
  *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree. An additional grant
- * of patent rights can be found in the PATENTS file in the same directory.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
  */
 
 package com.facebook.drawee.controller;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.NotThreadSafe;
-
-import java.util.concurrent.Executor;
+import static com.facebook.drawee.components.DraweeEventTracker.Event;
 
 import android.graphics.drawable.Animatable;
 import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
-
 import com.facebook.common.internal.Objects;
 import com.facebook.common.internal.Preconditions;
 import com.facebook.common.logging.FLog;
+import com.facebook.datasource.BaseDataSubscriber;
+import com.facebook.datasource.DataSource;
+import com.facebook.datasource.DataSubscriber;
 import com.facebook.drawee.components.DeferredReleaser;
 import com.facebook.drawee.components.DraweeEventTracker;
 import com.facebook.drawee.components.RetryManager;
 import com.facebook.drawee.gestures.GestureDetector;
-import com.facebook.drawee.interfaces.DraweeHierarchy;
 import com.facebook.drawee.interfaces.DraweeController;
+import com.facebook.drawee.interfaces.DraweeHierarchy;
 import com.facebook.drawee.interfaces.SettableDraweeHierarchy;
-import com.facebook.datasource.BaseDataSubscriber;
-import com.facebook.datasource.DataSource;
-import com.facebook.datasource.DataSubscriber;
-
-import static com.facebook.drawee.components.DraweeEventTracker.Event;
+import com.facebook.infer.annotation.ReturnsOwnership;
+import java.util.concurrent.Executor;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.NotThreadSafe;
 
 /**
  * Abstract Drawee controller that implements common functionality
@@ -55,8 +51,7 @@ public abstract class AbstractDraweeController<T, INFO> implements
    */
   private static class InternalForwardingListener<INFO> extends ForwardingControllerListener<INFO> {
     public static <INFO> InternalForwardingListener<INFO> createInternal(
-        ControllerListener<? super INFO> listener1,
-        ControllerListener<? super INFO> listener2) {
+        ControllerListener<? super INFO> listener1, ControllerListener<? super INFO> listener2) {
       InternalForwardingListener<INFO> forwarder = new InternalForwardingListener<INFO>();
       forwarder.addListener(listener1);
       forwarder.addListener(listener2);
@@ -95,6 +90,7 @@ public abstract class AbstractDraweeController<T, INFO> implements
   private @Nullable DataSource<T> mDataSource;
   private @Nullable T mFetchedImage;
   private @Nullable Drawable mDrawable;
+  private boolean mJustConstructed = true;
 
   public AbstractDraweeController(
       DeferredReleaser deferredReleaser,
@@ -103,7 +99,7 @@ public abstract class AbstractDraweeController<T, INFO> implements
       Object callerContext) {
     mDeferredReleaser = deferredReleaser;
     mUiThreadImmediateExecutor = uiThreadImmediateExecutor;
-    init(id, callerContext, true);
+    init(id, callerContext);
   }
 
   /**
@@ -114,13 +110,14 @@ public abstract class AbstractDraweeController<T, INFO> implements
    * @param callerContext tag and context for this controller
    */
   protected void initialize(String id, Object callerContext) {
-    init(id, callerContext, false);
+    init(id, callerContext);
+    mJustConstructed = false;
   }
 
-  private void init(String id, Object callerContext, boolean justConstructed) {
+  private void init(String id, Object callerContext) {
     mEventTracker.recordEvent(Event.ON_INIT_CONTROLLER);
     // cancel deferred release
-    if (!justConstructed && mDeferredReleaser != null) {
+    if (!mJustConstructed && mDeferredReleaser != null) {
       mDeferredReleaser.cancelDeferredRelease(this);
     }
     // reinitialize mutable state (fetch state)
@@ -208,13 +205,11 @@ public abstract class AbstractDraweeController<T, INFO> implements
   }
 
   /** Gets retry manager. */
-  protected @Nullable RetryManager getRetryManager() {
+  @ReturnsOwnership protected RetryManager getRetryManager() {
+    if (mRetryManager == null) {
+      mRetryManager = new RetryManager();
+    }
     return mRetryManager;
-  }
-
-  /** Sets retry manager. */
-  protected void setRetryManager(@Nullable RetryManager retryManager) {
-    mRetryManager = retryManager;
   }
 
   /** Gets gesture detector. */
@@ -437,6 +432,7 @@ public abstract class AbstractDraweeController<T, INFO> implements
       mHasFetchFailed = false;
       mEventTracker.recordEvent(Event.ON_SUBMIT_CACHE_HIT);
       getControllerListener().onSubmit(mId, mCallerContext);
+      onImageLoadedFromCacheImmediately(mId, closeableImage);
       onNewResultInternal(mId, mDataSource, closeableImage, 1.0f, true, true);
       return;
     }
@@ -664,4 +660,6 @@ public abstract class AbstractDraweeController<T, INFO> implements
   protected T getCachedImage() {
     return null;
   }
+
+  protected void onImageLoadedFromCacheImmediately(String id, T cachedImage) {}
 }

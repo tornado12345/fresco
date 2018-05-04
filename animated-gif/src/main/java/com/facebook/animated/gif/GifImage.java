@@ -1,25 +1,21 @@
 /*
  * Copyright (c) 2015-present, Facebook, Inc.
- * All rights reserved.
  *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree. An additional grant
- * of patent rights can be found in the PATENTS file in the same directory.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
  */
 
 package com.facebook.animated.gif;
 
-import javax.annotation.concurrent.ThreadSafe;
-
-import java.nio.ByteBuffer;
-
 import com.facebook.common.internal.DoNotStrip;
 import com.facebook.common.internal.Preconditions;
-import com.facebook.common.soloader.SoLoaderShim;
 import com.facebook.imagepipeline.animated.base.AnimatedDrawableFrameInfo;
 import com.facebook.imagepipeline.animated.base.AnimatedDrawableFrameInfo.BlendOperation;
 import com.facebook.imagepipeline.animated.base.AnimatedImage;
 import com.facebook.imagepipeline.animated.factory.AnimatedImageDecoder;
+import com.facebook.soloader.SoLoader;
+import java.nio.ByteBuffer;
+import javax.annotation.concurrent.ThreadSafe;
 
 /**
  * A representation of a GIF image. An instance of this class will hold a copy of the encoded
@@ -43,7 +39,7 @@ public class GifImage implements AnimatedImage, AnimatedImageDecoder {
   private static synchronized void ensure() {
     if (!sInitialized) {
       sInitialized = true;
-      SoLoaderShim.loadLibrary("gifimage");
+      SoLoader.loadLibrary("gifimage");
     }
   }
 
@@ -188,16 +184,39 @@ public class GifImage implements AnimatedImage, AnimatedImageDecoder {
     }
   }
 
+  @DoNotStrip
   private static native GifImage nativeCreateFromDirectByteBuffer(ByteBuffer buffer);
+
+  @DoNotStrip
   private static native GifImage nativeCreateFromNativeMemory(long nativePtr, int sizeInBytes);
+
+  @DoNotStrip
   private native int nativeGetWidth();
+
+  @DoNotStrip
   private native int nativeGetHeight();
+
+  @DoNotStrip
   private native int nativeGetDuration();
+
+  @DoNotStrip
   private native int nativeGetFrameCount();
+
+  @DoNotStrip
   private native int[] nativeGetFrameDurations();
+
+  @DoNotStrip
   private native int nativeGetLoopCount();
+
+  @DoNotStrip
   private native GifFrame nativeGetFrame(int frameNumber);
+
+  @DoNotStrip
   private native int nativeGetSizeInBytes();
+
+  @DoNotStrip
   private native void nativeDispose();
+
+  @DoNotStrip
   private native void nativeFinalize();
 }
