@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -32,6 +32,7 @@ public class RoundingParamsTest {
     assertNull(mRoundingParams.getCornersRadii());
     assertEquals(0, mRoundingParams.getOverlayColor());
     assertFalse(mRoundingParams.getScaleDownInsideBorders());
+    assertFalse(mRoundingParams.getPaintFilterBitmap());
   }
 
   @Test
@@ -85,6 +86,14 @@ public class RoundingParamsTest {
     assertTrue(mRoundingParams.getScaleDownInsideBorders());
     assertSame(mRoundingParams, mRoundingParams.setScaleDownInsideBorders(false));
     assertFalse(mRoundingParams.getScaleDownInsideBorders());
+  }
+
+  @Test
+  public void testSetPaintFilterBitmap() {
+    assertSame(mRoundingParams, mRoundingParams.setPaintFilterBitmap(true));
+    assertTrue(mRoundingParams.getPaintFilterBitmap());
+    assertSame(mRoundingParams, mRoundingParams.setPaintFilterBitmap(false));
+    assertFalse(mRoundingParams.getPaintFilterBitmap());
   }
 
   @Test

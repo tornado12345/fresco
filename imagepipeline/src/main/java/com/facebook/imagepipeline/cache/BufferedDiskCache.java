@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -19,6 +19,7 @@ import com.facebook.common.memory.PooledByteBufferFactory;
 import com.facebook.common.memory.PooledByteStreams;
 import com.facebook.common.references.CloseableReference;
 import com.facebook.imagepipeline.image.EncodedImage;
+import com.facebook.imagepipeline.systrace.FrescoSystrace;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -26,6 +27,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.annotation.Nullable;
 
 /**
  * BufferedDiskCache provides get and put operations to take care of scheduling disk-cache
@@ -127,11 +129,20 @@ public class BufferedDiskCache {
    *   returned task never rethrows any exception
    */
   public Task<EncodedImage> get(CacheKey key, AtomicBoolean isCancelled) {
-    final EncodedImage pinnedImage = mStagingArea.get(key);
-    if (pinnedImage != null) {
-      return foundPinnedImage(key, pinnedImage);
+    try {
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.beginSection("BufferedDiskCache#get");
+      }
+      final EncodedImage pinnedImage = mStagingArea.get(key);
+      if (pinnedImage != null) {
+        return foundPinnedImage(key, pinnedImage);
+      }
+      return getAsync(key, isCancelled);
+    } finally {
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.endSection();
+      }
     }
-    return getAsync(key, isCancelled);
   }
 
   /**
@@ -163,40 +174,51 @@ public class BufferedDiskCache {
       return Task.call(
           new Callable<EncodedImage>() {
             @Override
-            public EncodedImage call()
-                throws Exception {
-              if (isCancelled.get()) {
-                throw new CancellationException();
-              }
-              EncodedImage result = mStagingArea.get(key);
-              if (result != null) {
-                FLog.v(TAG, "Found image for %s in staging area", key.getUriString());
-                mImageCacheStatsTracker.onStagingAreaHit(key);
-              } else {
-                FLog.v(TAG, "Did not find image for %s in staging area", key.getUriString());
-                mImageCacheStatsTracker.onStagingAreaMiss();
-
-                try {
-                  final PooledByteBuffer buffer = readFromDiskCache(key);
-                  CloseableReference<PooledByteBuffer> ref = CloseableReference.of(buffer);
-                  try {
-                    result = new EncodedImage(ref);
-                  } finally {
-                    CloseableReference.closeSafely(ref);
-                  }
-                } catch (Exception exception) {
-                  return null;
+            public @Nullable EncodedImage call() throws Exception {
+              try {
+                if (FrescoSystrace.isTracing()) {
+                  FrescoSystrace.beginSection("BufferedDiskCache#getAsync");
                 }
-              }
-
-              if (Thread.interrupted()) {
-                FLog.v(TAG, "Host thread was interrupted, decreasing reference count");
+                if (isCancelled.get()) {
+                  throw new CancellationException();
+                }
+                EncodedImage result = mStagingArea.get(key);
                 if (result != null) {
-                  result.close();
+                  FLog.v(TAG, "Found image for %s in staging area", key.getUriString());
+                  mImageCacheStatsTracker.onStagingAreaHit(key);
+                } else {
+                  FLog.v(TAG, "Did not find image for %s in staging area", key.getUriString());
+                  mImageCacheStatsTracker.onStagingAreaMiss();
+
+                  try {
+                    final PooledByteBuffer buffer = readFromDiskCache(key);
+                    if (buffer == null) {
+                      return null;
+                    }
+                    CloseableReference<PooledByteBuffer> ref = CloseableReference.of(buffer);
+                    try {
+                      result = new EncodedImage(ref);
+                    } finally {
+                      CloseableReference.closeSafely(ref);
+                    }
+                  } catch (Exception exception) {
+                    return null;
+                  }
                 }
-                throw new InterruptedException();
-              } else {
-                return result;
+
+                if (Thread.interrupted()) {
+                  FLog.v(TAG, "Host thread was interrupted, decreasing reference count");
+                  if (result != null) {
+                    result.close();
+                  }
+                  throw new InterruptedException();
+                } else {
+                  return result;
+                }
+              } finally {
+                if (FrescoSystrace.isTracing()) {
+                  FrescoSystrace.endSection();
+                }
               }
             }
           },
@@ -220,39 +242,51 @@ public class BufferedDiskCache {
   public void put(
       final CacheKey key,
       EncodedImage encodedImage) {
-    Preconditions.checkNotNull(key);
-    Preconditions.checkArgument(EncodedImage.isValid(encodedImage));
-
-    // Store encodedImage in staging area
-    mStagingArea.put(key, encodedImage);
-
-    // Write to disk cache. This will be executed on background thread, so increment the ref count.
-    // When this write completes (with success/failure), then we will bump down the ref count
-    // again.
-    final EncodedImage finalEncodedImage = EncodedImage.cloneOrNull(encodedImage);
     try {
-      mWriteExecutor.execute(
-          new Runnable() {
-            @Override
-            public void run() {
-              try {
-                writeToDiskCache(key, finalEncodedImage);
-              } finally {
-                mStagingArea.remove(key, finalEncodedImage);
-                EncodedImage.closeSafely(finalEncodedImage);
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.beginSection("BufferedDiskCache#put");
+      }
+      Preconditions.checkNotNull(key);
+      Preconditions.checkArgument(EncodedImage.isValid(encodedImage));
+
+      // Store encodedImage in staging area
+      mStagingArea.put(key, encodedImage);
+
+      // Write to disk cache. This will be executed on background thread, so increment the ref
+      // count. When this write completes (with success/failure), then we will bump down the
+      // ref count again.
+      final EncodedImage finalEncodedImage = EncodedImage.cloneOrNull(encodedImage);
+      try {
+
+        mWriteExecutor.execute(
+            new Runnable() {
+              @Override
+              public void run() {
+                try {
+                  if (FrescoSystrace.isTracing()) {
+                    FrescoSystrace.beginSection("BufferedDiskCache#putAsync");
+                  }
+                  writeToDiskCache(key, finalEncodedImage);
+                } finally {
+                  mStagingArea.remove(key, finalEncodedImage);
+                  EncodedImage.closeSafely(finalEncodedImage);
+                  if (FrescoSystrace.isTracing()) {
+                    FrescoSystrace.endSection();
+                  }
+                }
               }
-            }
-          });
-    } catch (Exception exception) {
-      // We failed to enqueue cache write. Log failure and decrement ref count
-      // TODO: 3697790
-      FLog.w(
-          TAG,
-          exception,
-          "Failed to schedule disk-cache write for %s",
-          key.getUriString());
-      mStagingArea.remove(key, encodedImage);
-      EncodedImage.closeSafely(finalEncodedImage);
+            });
+      } catch (Exception exception) {
+        // We failed to enqueue cache write. Log failure and decrement ref count
+        // TODO: 3697790
+        FLog.w(TAG, exception, "Failed to schedule disk-cache write for %s", key.getUriString());
+        mStagingArea.remove(key, encodedImage);
+        EncodedImage.closeSafely(finalEncodedImage);
+      }
+    } finally {
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.endSection();
+      }
     }
   }
 
@@ -267,8 +301,17 @@ public class BufferedDiskCache {
           new Callable<Void>() {
             @Override
             public Void call() throws Exception {
-              mStagingArea.remove(key);
-              mFileCache.remove(key);
+              try {
+                if (FrescoSystrace.isTracing()) {
+                  FrescoSystrace.beginSection("BufferedDiskCache#remove");
+                }
+                mStagingArea.remove(key);
+                mFileCache.remove(key);
+              } finally {
+                if (FrescoSystrace.isTracing()) {
+                  FrescoSystrace.endSection();
+                }
+              }
               return null;
             }
           },
@@ -311,10 +354,8 @@ public class BufferedDiskCache {
     return Task.forResult(pinnedImage);
   }
 
-  /**
-   * Performs disk cache read. In case of any exception null is returned.
-   */
-  private PooledByteBuffer readFromDiskCache(final CacheKey key) throws IOException {
+  /** Performs disk cache read. In case of any exception null is returned. */
+  private @Nullable PooledByteBuffer readFromDiskCache(final CacheKey key) throws IOException {
     try {
       FLog.v(TAG, "Disk cache read for %s", key.getUriString());
 
@@ -325,7 +366,7 @@ public class BufferedDiskCache {
         return null;
       } else {
         FLog.v(TAG, "Found entry in disk cache for %s", key.getUriString());
-        mImageCacheStatsTracker.onDiskCacheHit();
+        mImageCacheStatsTracker.onDiskCacheHit(key);
       }
 
       PooledByteBuffer byteBuffer;

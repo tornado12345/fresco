@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -20,6 +20,7 @@ import com.facebook.common.memory.PooledByteBufferFactory;
 import com.facebook.common.memory.PooledByteBufferOutputStream;
 import com.facebook.common.references.CloseableReference;
 import com.facebook.common.util.ByteConstants;
+import com.facebook.imageformat.ImageFormat;
 import com.facebook.imagepipeline.cache.BufferedDiskCache;
 import com.facebook.imagepipeline.cache.CacheKeyFactory;
 import com.facebook.imagepipeline.common.BytesRange;
@@ -277,7 +278,9 @@ public class PartialDiskCacheProducer implements Producer<EncodedImage> {
         }
 
         mDefaultBufferedDiskCache.remove(mPartialImageCacheKey);
-      } else if (statusHasFlag(status, IS_PARTIAL_RESULT) && isLast(status)) {
+      } else if (statusHasFlag(status, IS_PARTIAL_RESULT)
+          && isLast(status)
+          && newResult.getImageFormat() != ImageFormat.UNKNOWN) {
         mDefaultBufferedDiskCache.put(mPartialImageCacheKey, newResult);
         getConsumer().onNewResult(newResult, status);
       } else {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -10,6 +10,7 @@ import static org.junit.Assert.*;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.util.Pair;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -37,6 +38,12 @@ public class BitmapUtilTest {
     final Bitmap bitmap3 =
         BitmapFactory.decodeStream(BitmapUtilTest.class.getResourceAsStream("pngs/3.png"));
     assertEquals(172800, BitmapUtil.getSizeInBytes(bitmap3));
+  }
+
+  @Test
+  public void testDecodeDimensionsUri_test() {
+    assertEquals(new Pair(100, 100), BitmapUtil.decodeDimensions(Uri.parse("pngs/1.png")));
+    assertEquals(new Pair(100, 100), BitmapUtil.decodeDimensions(Uri.parse("jpegs/1.jpeg")));
   }
 
   @Test

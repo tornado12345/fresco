@@ -1,12 +1,12 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
 package com.facebook.imagepipeline.cache;
 
-import com.android.internal.util.Predicate;
+import com.facebook.common.internal.Predicate;
 import com.facebook.common.internal.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.Iterator;

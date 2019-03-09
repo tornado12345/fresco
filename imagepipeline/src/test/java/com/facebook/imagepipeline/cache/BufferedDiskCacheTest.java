@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -55,9 +55,9 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
 @RunWith(RobolectricTestRunner.class)
-@PowerMockIgnore({ "org.mockito.*", "org.robolectric.*", "android.*" })
+@PowerMockIgnore({"org.mockito.*", "org.robolectric.*", "androidx.*", "android.*"})
 @PrepareOnlyThisForTest(StagingArea.class)
-@Config(manifest=Config.NONE)
+@Config(manifest = Config.NONE)
 public class BufferedDiskCacheTest {
   @Mock public FileCache mFileCache;
   @Mock public PooledByteBufferFactory mByteBufferFactory;

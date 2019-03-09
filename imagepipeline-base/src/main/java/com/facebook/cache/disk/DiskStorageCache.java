@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -173,14 +173,15 @@ public class DiskStorageCache implements FileCache, DiskTrimmable {
 
     this.mCacheStats = new CacheStats();
 
-    if (diskTrimmableRegistry != null) {
-      diskTrimmableRegistry.registerDiskTrimmable(this);
-    }
     this.mClock = SystemClock.get();
 
     mIndexPopulateAtStartupEnabled = indexPopulateAtStartupEnabled;
 
     this.mResourceIndex = new HashSet<>();
+
+    if (diskTrimmableRegistry != null) {
+      diskTrimmableRegistry.registerDiskTrimmable(this);
+    }
 
     if (mIndexPopulateAtStartupEnabled) {
       mCountDownLatch = new CountDownLatch(1);
@@ -233,17 +234,16 @@ public class DiskStorageCache implements FileCache, DiskTrimmable {
   }
 
   /**
-   * Retrieves the file corresponding to the mKey, if it is in the cache. Also
-   * touches the item, thus changing its LRU timestamp. If the file is not
-   * present in the file cache, returns null.
-   * <p>
-   * This should NOT be called on the UI thread.
+   * Retrieves the file corresponding to the mKey, if it is in the cache. Also touches the item,
+   * thus changing its LRU timestamp. If the file is not present in the file cache, returns null.
+   *
+   * <p>This should NOT be called on the UI thread.
    *
    * @param key the mKey to check
    * @return The resource if present in cache, otherwise null
    */
   @Override
-  public BinaryResource getResource(final CacheKey key) {
+  public @Nullable BinaryResource getResource(final CacheKey key) {
     String resourceId = null;
     SettableCacheEvent cacheEvent = SettableCacheEvent.obtain()
         .setCacheKey(key);
@@ -591,12 +591,9 @@ public class DiskStorageCache implements FileCache, DiskTrimmable {
         mStorage.clearAll();
         mResourceIndex.clear();
         mCacheEventListener.onCleared();
-      } catch (IOException ioe) {
+      } catch (IOException | NullPointerException e) {
         mCacheErrorLogger.logError(
-            CacheErrorLogger.CacheErrorCategory.EVICTION,
-            TAG,
-            "clearAll: " + ioe.getMessage(),
-            ioe);
+            CacheErrorLogger.CacheErrorCategory.EVICTION, TAG, "clearAll: " + e.getMessage(), e);
       }
       mCacheStats.reset();
     }

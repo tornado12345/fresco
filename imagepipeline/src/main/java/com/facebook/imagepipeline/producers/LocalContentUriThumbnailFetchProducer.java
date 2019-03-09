@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -68,7 +68,7 @@ public class LocalContentUriThumbnailFetchProducer extends LocalFetchProducer
   }
 
   @Override
-  protected EncodedImage getEncodedImage(ImageRequest imageRequest) throws IOException {
+  protected @Nullable EncodedImage getEncodedImage(ImageRequest imageRequest) throws IOException {
     Uri uri = imageRequest.getSourceUri();
 
     if (UriUtil.isLocalCameraUri(uri)) {
@@ -112,7 +112,8 @@ public class LocalContentUriThumbnailFetchProducer extends LocalFetchProducer
   // Gets the smallest possible thumbnail that is bigger than the requested size in the resize
   // options or null if either the thumbnails are smaller than the requested size or there are no
   // stored thumbnails.
-  private EncodedImage getThumbnail(ResizeOptions resizeOptions, int imageId) throws IOException {
+  private @Nullable EncodedImage getThumbnail(ResizeOptions resizeOptions, int imageId)
+      throws IOException {
     int thumbnailKind = getThumbnailKind(resizeOptions);
     if (thumbnailKind == NO_THUMBNAIL) {
       return null;

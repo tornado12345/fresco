@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -71,11 +71,11 @@ public class PostprocessedBitmapMemoryCacheProducer
       cachedReference.close();
     } else {
       final boolean isRepeatedProcessor = postprocessor instanceof RepeatedPostprocessor;
-      Consumer<CloseableReference<CloseableImage>> cachedConsumer = new CachedPostprocessorConsumer(
-          consumer,
-          cacheKey,
-          isRepeatedProcessor,
-          mMemoryCache);
+      final boolean isMemoryCachedEnabled =
+          producerContext.getImageRequest().isMemoryCacheEnabled();
+      Consumer<CloseableReference<CloseableImage>> cachedConsumer =
+          new CachedPostprocessorConsumer(
+              consumer, cacheKey, isRepeatedProcessor, mMemoryCache, isMemoryCachedEnabled);
       listener.onProducerFinishWithSuccess(
           requestId,
           getProducerName(),
@@ -91,15 +91,19 @@ public class PostprocessedBitmapMemoryCacheProducer
     private final CacheKey mCacheKey;
     private final boolean mIsRepeatedProcessor;
     private final MemoryCache<CacheKey, CloseableImage> mMemoryCache;
+    private final boolean mIsMemoryCachedEnabled;
 
-    public CachedPostprocessorConsumer(final Consumer<CloseableReference<CloseableImage>> consumer,
+    public CachedPostprocessorConsumer(
+        final Consumer<CloseableReference<CloseableImage>> consumer,
         final CacheKey cacheKey,
         final boolean isRepeatedProcessor,
-        final MemoryCache<CacheKey, CloseableImage> memoryCache) {
+        final MemoryCache<CacheKey, CloseableImage> memoryCache,
+        boolean isMemoryCachedEnabled) {
       super(consumer);
       this.mCacheKey = cacheKey;
       this.mIsRepeatedProcessor = isRepeatedProcessor;
       this.mMemoryCache = memoryCache;
+      mIsMemoryCachedEnabled = isMemoryCachedEnabled;
     }
 
     @Override
@@ -117,9 +121,11 @@ public class PostprocessedBitmapMemoryCacheProducer
       if (isNotLast(status) && !mIsRepeatedProcessor) {
         return;
       }
-      // cache and forward the new result
-      CloseableReference<CloseableImage> newCachedResult =
-          mMemoryCache.cache(mCacheKey, newResult);
+      // cache, if needed, and forward the new result
+      CloseableReference<CloseableImage> newCachedResult = null;
+      if (mIsMemoryCachedEnabled) {
+        newCachedResult = mMemoryCache.cache(mCacheKey, newResult);
+      }
       try {
         getConsumer().onProgressUpdate(1f);
         getConsumer().onNewResult(

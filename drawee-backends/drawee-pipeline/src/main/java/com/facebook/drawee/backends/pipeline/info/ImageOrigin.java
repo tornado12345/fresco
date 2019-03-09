@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -7,13 +7,14 @@
 package com.facebook.drawee.backends.pipeline.info;
 
 import static com.facebook.drawee.backends.pipeline.info.ImageOrigin.DISK;
+import static com.facebook.drawee.backends.pipeline.info.ImageOrigin.LOCAL;
 import static com.facebook.drawee.backends.pipeline.info.ImageOrigin.MEMORY_BITMAP;
 import static com.facebook.drawee.backends.pipeline.info.ImageOrigin.MEMORY_ENCODED;
 import static com.facebook.drawee.backends.pipeline.info.ImageOrigin.NETWORK;
 import static com.facebook.drawee.backends.pipeline.info.ImageOrigin.UNKNOWN;
 import static java.lang.annotation.RetentionPolicy.SOURCE;
 
-import android.support.annotation.IntDef;
+import androidx.annotation.IntDef;
 import java.lang.annotation.Retention;
 
 /**
@@ -24,14 +25,16 @@ import java.lang.annotation.Retention;
   UNKNOWN,
   NETWORK,
   DISK,
-  MEMORY_BITMAP,
   MEMORY_ENCODED,
+  MEMORY_BITMAP,
+  LOCAL,
 })
 public @interface ImageOrigin {
 
-  int UNKNOWN = -1;
-  int NETWORK = 0;
-  int DISK = 1;
-  int MEMORY_BITMAP = 2;
-  int MEMORY_ENCODED = 3;
+  int UNKNOWN = 1;
+  int NETWORK = 2;
+  int DISK = 3;
+  int MEMORY_ENCODED = 4;
+  int MEMORY_BITMAP = 5;
+  int LOCAL = 6;
 }

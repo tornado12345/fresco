@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -20,6 +20,7 @@ import com.facebook.imagepipeline.request.ImageRequest.CacheChoice;
 import java.util.Map;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.annotation.Nullable;
 
 /**
  * Disk cache read producer.
@@ -136,7 +137,7 @@ public class DiskCacheReadProducer implements Producer<EncodedImage> {
   }
 
   @VisibleForTesting
-  static Map<String, String> getExtraMap(
+  static @Nullable Map<String, String> getExtraMap(
       final ProducerListener listener,
       final String requestId,
       final boolean valueFound,

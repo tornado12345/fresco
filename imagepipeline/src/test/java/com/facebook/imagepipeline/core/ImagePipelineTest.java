@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -20,10 +20,10 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import android.net.Uri;
-import com.android.internal.util.Predicate;
 import com.facebook.cache.common.CacheKey;
 import com.facebook.cache.common.MultiCacheKey;
 import com.facebook.cache.common.SimpleCacheKey;
+import com.facebook.common.internal.Predicate;
 import com.facebook.common.internal.Sets;
 import com.facebook.common.internal.Supplier;
 import com.facebook.common.memory.PooledByteBuffer;
@@ -63,6 +63,7 @@ public class ImagePipelineTest {
 
   private Supplier<Boolean> mPrefetchEnabledSupplier;
   private Supplier<Boolean> mSuppressBitmapPrefetchingSupplier;
+  private Supplier<Boolean> mLazyDataSourceSupplier;
   private ImagePipeline mImagePipeline;
   private MemoryCache<CacheKey, CloseableImage> mBitmapMemoryCache;
   private MemoryCache<CacheKey, PooledByteBuffer> mEncodedMemoryCache;
@@ -77,8 +78,10 @@ public class ImagePipelineTest {
     MockitoAnnotations.initMocks(this);
     mPrefetchEnabledSupplier = mock(Supplier.class);
     mSuppressBitmapPrefetchingSupplier = mock(Supplier.class);
+    mLazyDataSourceSupplier = mock(Supplier.class);
     when(mPrefetchEnabledSupplier.get()).thenReturn(true);
     when(mSuppressBitmapPrefetchingSupplier.get()).thenReturn(false);
+    when(mLazyDataSourceSupplier.get()).thenReturn(false);
     mRequestListener1 = mock(RequestListener.class);
     mRequestListener2 = mock(RequestListener.class);
     mBitmapMemoryCache = mock(MemoryCache.class);
@@ -96,12 +99,15 @@ public class ImagePipelineTest {
         mSmallImageDiskStorageCache,
         mCacheKeyFactory,
         mThreadHandoffProducerQueue,
-        mSuppressBitmapPrefetchingSupplier);
+        mSuppressBitmapPrefetchingSupplier,
+        mLazyDataSourceSupplier);
 
     when(mImageRequest.getProgressiveRenderingEnabled()).thenReturn(true);
     when(mImageRequest.getPriority()).thenReturn(Priority.HIGH);
     when(mImageRequest.getLowestPermittedRequestLevel())
         .thenReturn(ImageRequest.RequestLevel.FULL_FETCH);
+    when(mImageRequest.shouldDecodePrefetches())
+            .thenReturn(null);
   }
 
   @Test

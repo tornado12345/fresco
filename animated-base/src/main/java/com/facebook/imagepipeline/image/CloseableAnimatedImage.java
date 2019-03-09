@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -9,6 +9,7 @@ package com.facebook.imagepipeline.image;
 
 import com.facebook.imagepipeline.animated.base.AnimatedImage;
 import com.facebook.imagepipeline.animated.base.AnimatedImageResult;
+import javax.annotation.Nullable;
 
 /**
  * Encapsulates the data needed in order for {@code AnimatedDrawable} to render a
@@ -64,7 +65,7 @@ public class CloseableAnimatedImage extends CloseableImage {
     return mImageResult;
   }
 
-  public synchronized AnimatedImage getImage() {
+  public synchronized @Nullable AnimatedImage getImage() {
     return isClosed() ? null : mImageResult.getImage();
   }
 }

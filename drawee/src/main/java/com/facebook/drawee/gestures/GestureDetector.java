@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -11,6 +11,7 @@ import android.content.Context;
 import android.view.MotionEvent;
 import android.view.ViewConfiguration;
 import com.facebook.common.internal.VisibleForTesting;
+import javax.annotation.Nullable;
 
 /**
  * Gesture detector based on touch events.
@@ -30,7 +31,7 @@ public class GestureDetector {
     public boolean onClick();
   }
 
-  @VisibleForTesting ClickListener mClickListener;
+  @VisibleForTesting @Nullable ClickListener mClickListener;
 
   @VisibleForTesting final float mSingleTapSlopPx;
   @VisibleForTesting boolean mIsCapturingGesture;

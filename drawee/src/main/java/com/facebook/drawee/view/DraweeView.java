@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -21,6 +21,7 @@ import android.widget.ImageView;
 import com.facebook.common.internal.Objects;
 import com.facebook.drawee.interfaces.DraweeController;
 import com.facebook.drawee.interfaces.DraweeHierarchy;
+import com.facebook.imagepipeline.systrace.FrescoSystrace;
 import javax.annotation.Nullable;
 
 /**
@@ -76,22 +77,32 @@ public class DraweeView<DH extends DraweeHierarchy> extends ImageView {
 
   /** This method is idempotent so it only has effect the first time it's called */
   private void init(Context context) {
-    if (mInitialised) {
-      return;
-    }
-    mInitialised = true;
-    mDraweeHolder = DraweeHolder.create(null, context);
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-      ColorStateList imageTintList = getImageTintList();
-      if (imageTintList == null) {
+    try {
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.beginSection("DraweeView#init");
+      }
+      if (mInitialised) {
         return;
       }
-      setColorFilter(imageTintList.getDefaultColor());
+      mInitialised = true;
+      mDraweeHolder = DraweeHolder.create(null, context);
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        ColorStateList imageTintList = getImageTintList();
+        if (imageTintList == null) {
+          return;
+        }
+        setColorFilter(imageTintList.getDefaultColor());
+      }
+      // In Android N and above, visibility handling for Drawables has been changed, which breaks
+      // activity transitions with DraweeViews.
+      mLegacyVisibilityHandlingEnabled =
+          sGlobalLegacyVisibilityHandlingEnabled
+              && context.getApplicationInfo().targetSdkVersion >= 24; // Build.VERSION_CODES.N
+    } finally {
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.endSection();
+      }
     }
-    // In Android N and above, visibility handling for Drawables has been changed, which breaks
-    // activity transitions with DraweeViews.
-    mLegacyVisibilityHandlingEnabled = sGlobalLegacyVisibilityHandlingEnabled &&
-        context.getApplicationInfo().targetSdkVersion >= 24; //Build.VERSION_CODES.N
   }
 
   /** Sets the hierarchy. */

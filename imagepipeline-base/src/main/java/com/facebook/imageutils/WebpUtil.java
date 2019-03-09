@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -91,7 +91,8 @@ public class WebpUtil {
    * @return The dimensions if any
    * @throws IOException In case or error reading from the InputStream
    */
-  private static Pair<Integer, Integer> getVP8Dimension(final InputStream is) throws IOException {
+  private static @Nullable Pair<Integer, Integer> getVP8Dimension(final InputStream is)
+      throws IOException {
     // We need to skip 7 bytes
     is.skip(7);
     // And then check the signature
@@ -113,7 +114,8 @@ public class WebpUtil {
    * @return The dimensions if any
    * @throws IOException In case or error reading from the InputStream
    */
-  private static Pair<Integer, Integer> getVP8LDimension(final InputStream is) throws IOException {
+  private static @Nullable Pair<Integer, Integer> getVP8LDimension(final InputStream is)
+      throws IOException {
     // Skip 4 bytes
     getInt(is);
     //We have a check here

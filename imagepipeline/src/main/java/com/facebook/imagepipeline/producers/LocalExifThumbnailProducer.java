@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -86,14 +86,9 @@ public class LocalExifThumbnailProducer implements ThumbnailProducer<EncodedImag
     final ImageRequest imageRequest = producerContext.getImageRequest();
 
     final StatefulProducerRunnable cancellableProducerRunnable =
-        new StatefulProducerRunnable<EncodedImage>(
-            consumer,
-            listener,
-            PRODUCER_NAME,
-            requestId) {
+        new StatefulProducerRunnable<EncodedImage>(consumer, listener, PRODUCER_NAME, requestId) {
           @Override
-          protected EncodedImage getResult()
-              throws Exception {
+          protected @Nullable EncodedImage getResult() throws Exception {
             final Uri sourceUri = imageRequest.getSourceUri();
 
             final ExifInterface exifInterface = getExifInterface(sourceUri);

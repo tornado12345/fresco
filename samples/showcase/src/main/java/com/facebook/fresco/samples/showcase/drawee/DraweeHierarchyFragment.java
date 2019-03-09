@@ -15,16 +15,18 @@ import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
-import android.support.v4.graphics.drawable.DrawableCompat;
-import android.support.v7.widget.SwitchCompat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CompoundButton;
+import androidx.annotation.Nullable;
+import androidx.appcompat.widget.SwitchCompat;
+import androidx.core.graphics.drawable.DrawableCompat;
+import androidx.fragment.app.Fragment;
 import com.facebook.drawee.backends.pipeline.Fresco;
 import com.facebook.drawee.drawable.ProgressBarDrawable;
 import com.facebook.drawee.drawable.ScalingUtils.ScaleType;
+import com.facebook.drawee.generic.RoundingParams;
 import com.facebook.drawee.view.SimpleDraweeView;
 import com.facebook.fresco.samples.showcase.BaseShowcaseFragment;
 import com.facebook.fresco.samples.showcase.R;
@@ -49,11 +51,11 @@ public class DraweeHierarchyFragment extends BaseShowcaseFragment {
 
   @Override
   public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
-    final ImageUriProvider imageUriProvider = ImageUriProvider.getInstance(getContext());
-    final Uri uriSuccess = imageUriProvider.createSampleUri(
-        ImageUriProvider.ImageSize.XL,
-        ImageUriProvider.UriModification.CACHE_BREAKER);
-    final Uri uriFailure = imageUriProvider.createNonExistingUri();
+    final Uri uriSuccess =
+        sampleUris()
+            .createSampleUri(
+                ImageUriProvider.ImageSize.XL, ImageUriProvider.UriModification.CACHE_BREAKER);
+    final Uri uriFailure = sampleUris().createNonExistingUri();
 
     final SimpleDraweeView draweeView = view.findViewById(R.id.drawee);
     final SwitchCompat retrySwitch = view.findViewById(R.id.retry_enabled);
@@ -90,6 +92,28 @@ public class DraweeHierarchyFragment extends BaseShowcaseFragment {
       public void onClick(View v) {
         draweeView.setController(null);
         Fresco.getImagePipeline().evictFromCache(uriSuccess);
+      }
+    });
+
+    final SwitchCompat roundCorners = view.findViewById(R.id.switch_rounded);
+    roundCorners.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+      @Override
+      public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+        RoundingParams roundingParams = new RoundingParams().setCornersRadius(isChecked
+            ? buttonView.getResources()
+                .getDimensionPixelSize(R.dimen.drawee_hierarchy_corner_radius)
+            : 0);
+        draweeView.getHierarchy().setRoundingParams(roundingParams);
+      }
+    });
+
+    final SwitchCompat useNinePatch = view.findViewById(R.id.switch_ninepatch);
+    useNinePatch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+      @Override
+      public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+        draweeView.getHierarchy().setPlaceholderImage(
+            isChecked ? R.drawable.ninepatch : R.drawable.logo,
+            isChecked ? ScaleType.FIT_XY : ScaleType.CENTER_INSIDE);
       }
     });
   }

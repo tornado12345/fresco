@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -48,9 +48,6 @@ public class ImageRequest {
 
   private final @SourceUriType int mSourceUriType;
 
-  /** Media variations - useful for potentially providing fallback to an alternative cached image */
-  private final @Nullable MediaVariations mMediaVariations;
-
   /** Source File - for local fetches only, lazily initialized */
   private File mSourceFile;
 
@@ -80,21 +77,40 @@ public class ImageRequest {
   /** Whether the disk cache should be used for this request */
   private final boolean mIsDiskCacheEnabled;
 
+  /** Whether the memory cache should be used for this request */
+  private final boolean mIsMemoryCacheEnabled;
+
+  /**
+   * Whether to decode prefetched images.
+   * true -> Cache both encoded image and bitmap.
+   * false -> Cache only encoded image and do not decode until image is needed to be shown.
+   * null -> Use pipeline's default
+   */
+  private final @Nullable Boolean mDecodePrefetches;
+
   /** Postprocessor to run on the output bitmap. */
   private final @Nullable Postprocessor mPostprocessor;
 
   /** Request listener to use for this image request */
   private final @Nullable RequestListener mRequestListener;
 
-  public static ImageRequest fromFile(@Nullable File file) {
+  /**
+   * Controls whether resizing is allowed for this request.
+   * true  -> allow for this request.
+   * false -> disallow for this request.
+   * null  -> use default pipeline's setting.
+   */
+  private final @Nullable Boolean mResizingAllowedOverride;
+
+  public static @Nullable ImageRequest fromFile(@Nullable File file) {
     return (file == null) ? null : ImageRequest.fromUri(UriUtil.getUriForFile(file));
   }
 
-  public static ImageRequest fromUri(@Nullable Uri uri) {
+  public static @Nullable ImageRequest fromUri(@Nullable Uri uri) {
     return (uri == null) ? null : ImageRequestBuilder.newBuilderWithSource(uri).build();
   }
 
-  public static ImageRequest fromUri(@Nullable String uriString) {
+  public static @Nullable ImageRequest fromUri(@Nullable String uriString) {
     return (uriString == null || uriString.length() == 0) ? null : fromUri(Uri.parse(uriString));
   }
 
@@ -102,7 +118,6 @@ public class ImageRequest {
     mCacheChoice = builder.getCacheChoice();
     mSourceUri = builder.getSourceUri();
     mSourceUriType = getSourceUriType(mSourceUri);
-    mMediaVariations = builder.getMediaVariations();
 
     mProgressiveRenderingEnabled = builder.isProgressiveRenderingEnabled();
     mLocalThumbnailPreviewsEnabled = builder.isLocalThumbnailPreviewsEnabled();
@@ -117,10 +132,14 @@ public class ImageRequest {
     mRequestPriority = builder.getRequestPriority();
     mLowestPermittedRequestLevel = builder.getLowestPermittedRequestLevel();
     mIsDiskCacheEnabled = builder.isDiskCacheEnabled();
+    mIsMemoryCacheEnabled = builder.isMemoryCacheEnabled();
+    mDecodePrefetches = builder.shouldDecodePrefetches();
 
     mPostprocessor = builder.getPostprocessor();
 
     mRequestListener = builder.getRequestListener();
+
+    mResizingAllowedOverride = builder.getResizingAllowedOverride();
   }
 
   public CacheChoice getCacheChoice() {
@@ -133,10 +152,6 @@ public class ImageRequest {
 
   public @SourceUriType int getSourceUriType() {
     return mSourceUriType;
-  }
-
-  public @Nullable MediaVariations getMediaVariations() {
-    return mMediaVariations;
   }
 
   public int getPreferredWidth() {
@@ -192,6 +207,18 @@ public class ImageRequest {
     return mIsDiskCacheEnabled;
   }
 
+  public boolean isMemoryCacheEnabled() {
+    return mIsMemoryCacheEnabled;
+  }
+
+  public @Nullable Boolean shouldDecodePrefetches() {
+    return mDecodePrefetches;
+  }
+
+  public @Nullable Boolean getResizingAllowedOverride() {
+    return mResizingAllowedOverride;
+  }
+
   public synchronized File getSourceFile() {
     if (mSourceFile == null) {
       mSourceFile = new File(mSourceUri.getPath());
@@ -215,7 +242,6 @@ public class ImageRequest {
     ImageRequest request = (ImageRequest) o;
     if (!Objects.equal(mSourceUri, request.mSourceUri)
         || !Objects.equal(mCacheChoice, request.mCacheChoice)
-        || !Objects.equal(mMediaVariations, request.mMediaVariations)
         || !Objects.equal(mSourceFile, request.mSourceFile)
         || !Objects.equal(mBytesRange, request.mBytesRange)
         || !Objects.equal(mImageDecodeOptions, request.mImageDecodeOptions)
@@ -237,13 +263,13 @@ public class ImageRequest {
     return Objects.hashCode(
         mCacheChoice,
         mSourceUri,
-        mMediaVariations,
         mSourceFile,
         mBytesRange,
         mImageDecodeOptions,
         mResizeOptions,
         mRotationOptions,
-        postprocessorCacheKey);
+        postprocessorCacheKey,
+        mResizingAllowedOverride);
   }
 
   @Override
@@ -257,7 +283,7 @@ public class ImageRequest {
         .add("resizeOptions", mResizeOptions)
         .add("rotationOptions", mRotationOptions)
         .add("bytesRange", mBytesRange)
-        .add("mediaVariations", mMediaVariations)
+        .add("resizingAllowedOverride", mResizingAllowedOverride)
         .toString();
   }
 

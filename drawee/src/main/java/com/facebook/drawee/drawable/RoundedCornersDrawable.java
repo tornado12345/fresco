@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -53,6 +53,7 @@ public class RoundedCornersDrawable extends ForwardingDrawable implements Rounde
   private int mOverlayColor = Color.TRANSPARENT;
   private float mPadding = 0;
   private boolean mScaleDownInsideBorders = false;
+  private boolean mPaintFilterBitmap = false;
   private final Path mPath = new Path();
   private final Path mBorderPath = new Path();
   private final RectF mTempRectangle = new RectF();
@@ -202,6 +203,30 @@ public class RoundedCornersDrawable extends ForwardingDrawable implements Rounde
     return mScaleDownInsideBorders;
   }
 
+
+  /**
+   * Sets FILTER_BITMAP_FLAG flag to Paint. {@link android.graphics.Paint#FILTER_BITMAP_FLAG}
+   *
+   * <p>This should generally be on when drawing bitmaps, unless performance-bound (rendering to software
+   * canvas) or preferring pixelation artifacts to blurriness when scaling
+   * significantly.
+   *
+   * @param paintFilterBitmap whether to set FILTER_BITMAP_FLAG flag to Paint.
+   */
+  @Override
+  public void setPaintFilterBitmap(boolean paintFilterBitmap) {
+    if (mPaintFilterBitmap != paintFilterBitmap) {
+      mPaintFilterBitmap = paintFilterBitmap;
+      invalidateSelf();
+    }
+  }
+
+  /** Gets whether to set FILTER_BITMAP_FLAG flag to Paint. */
+  @Override
+  public boolean getPaintFilterBitmap() {
+    return mPaintFilterBitmap;
+  }
+
   @Override
   protected void onBoundsChange(Rect bounds) {
     super.onBoundsChange(bounds);
@@ -214,6 +239,7 @@ public class RoundedCornersDrawable extends ForwardingDrawable implements Rounde
     mTempRectangle.set(getBounds());
 
     mTempRectangle.inset(mPadding, mPadding);
+    mPath.addRect(mTempRectangle, Path.Direction.CW);
     if (mIsCircle) {
       mPath.addCircle(
               mTempRectangle.centerX(),
@@ -275,7 +301,8 @@ public class RoundedCornersDrawable extends ForwardingDrawable implements Rounde
         mPaint.setStyle(Paint.Style.FILL);
         mPaint.setColor(mOverlayColor);
         mPaint.setStrokeWidth(0f);
-        mPath.setFillType(Path.FillType.INVERSE_EVEN_ODD);
+        mPaint.setFilterBitmap(getPaintFilterBitmap());
+        mPath.setFillType(Path.FillType.EVEN_ODD);
         canvas.drawPath(mPath, mPaint);
 
         if (mIsCircle) {

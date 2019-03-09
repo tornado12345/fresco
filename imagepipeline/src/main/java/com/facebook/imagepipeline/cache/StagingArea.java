@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
 /**
@@ -130,7 +131,7 @@ public class StagingArea {
    * @param key
    * @return value associated with given key or null if no value is associated
    */
-  public synchronized EncodedImage get(final CacheKey key) {
+  public synchronized @Nullable EncodedImage get(final CacheKey key) {
     Preconditions.checkNotNull(key);
     EncodedImage storedEncodedImage = mMap.get(key);
     if (storedEncodedImage != null) {

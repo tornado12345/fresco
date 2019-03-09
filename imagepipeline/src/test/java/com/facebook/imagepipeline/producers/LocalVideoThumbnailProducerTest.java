@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -42,13 +42,11 @@ import org.powermock.modules.junit4.rule.*;
 import org.robolectric.*;
 import org.robolectric.annotation.*;
 
-/**
- * Basic tests for {@link LocalVideoThumbnailProducer}
- */
+/** Basic tests for {@link LocalVideoThumbnailProducer} */
 @RunWith(RobolectricTestRunner.class)
-@PowerMockIgnore({ "org.mockito.*", "org.robolectric.*", "android.*" })
+@PowerMockIgnore({"org.mockito.*", "org.robolectric.*", "androidx.*", "android.*"})
 @PrepareForTest(android.media.ThumbnailUtils.class)
-@Config(manifest= Config.NONE)
+@Config(manifest = Config.NONE)
 public class LocalVideoThumbnailProducerTest {
   private static final String PRODUCER_NAME = LocalVideoThumbnailProducer.PRODUCER_NAME;
   private static final String TEST_FILENAME = "dummy.jpg";

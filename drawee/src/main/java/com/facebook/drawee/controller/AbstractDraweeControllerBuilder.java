@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -19,6 +19,7 @@ import com.facebook.datasource.IncreasingQualityDataSourceSupplier;
 import com.facebook.drawee.gestures.GestureDetector;
 import com.facebook.drawee.interfaces.DraweeController;
 import com.facebook.drawee.interfaces.SimpleDraweeControllerBuilder;
+import com.facebook.imagepipeline.systrace.FrescoSystrace;
 import com.facebook.infer.annotation.ReturnsOwnership;
 import java.util.ArrayList;
 import java.util.List;
@@ -230,7 +231,8 @@ public abstract class AbstractDraweeControllerBuilder <
   }
 
   /** Sets the controller listener. */
-  public BUILDER setControllerListener(ControllerListener<? super INFO> controllerListener) {
+  public BUILDER setControllerListener(
+      @Nullable ControllerListener<? super INFO> controllerListener) {
     mControllerListener = controllerListener;
     return getThis();
   }
@@ -306,12 +308,18 @@ public abstract class AbstractDraweeControllerBuilder <
 
   /** Builds a regular controller. */
   protected AbstractDraweeController buildController() {
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.beginSection("AbstractDraweeControllerBuilder#buildController");
+    }
     AbstractDraweeController controller = obtainController();
     controller.setRetainImageOnFailure(getRetainImageOnFailure());
     controller.setContentDescription(getContentDescription());
     controller.setControllerViewportVisibilityListener(getControllerViewportVisibilityListener());
     maybeBuildAndSetRetryManager(controller);
     maybeAttachListeners(controller);
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.endSection();
+    }
     return controller;
   }
 
@@ -343,7 +351,7 @@ public abstract class AbstractDraweeControllerBuilder <
       List<Supplier<DataSource<IMAGE>>> suppliers = new ArrayList<>(2);
       suppliers.add(supplier);
       suppliers.add(getDataSourceSupplierForRequest(controller, controllerId, mLowResImageRequest));
-      supplier = IncreasingQualityDataSourceSupplier.create(suppliers);
+      supplier = IncreasingQualityDataSourceSupplier.create(suppliers, false);
     }
 
     // no image requests; use null data source supplier

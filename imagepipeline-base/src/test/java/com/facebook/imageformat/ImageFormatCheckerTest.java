@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -91,6 +91,11 @@ public class ImageFormatCheckerTest {
     singleImageTypeTest(
         getNames(5, "bmps/%d.bmp"),
         DefaultImageFormats.BMP);
+  }
+
+  @Test
+  public void testHeifs() throws Exception {
+    singleImageTypeTest(getName("heifs/1.heif"), DefaultImageFormats.HEIF);
   }
 
   private void singleImageTypeTest(

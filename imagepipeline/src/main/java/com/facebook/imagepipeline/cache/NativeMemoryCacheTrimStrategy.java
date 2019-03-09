@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -29,6 +29,7 @@ public class NativeMemoryCacheTrimStrategy implements CountingMemoryCache.CacheT
         // Resources cached on native heap do not consume Dalvik heap, so no trimming here.
         return 0;
       case OnAppBackgrounded:
+      case OnSystemMemoryCriticallyLowWhileAppInForeground:
       case OnSystemLowMemoryWhileAppInForeground:
       case OnSystemLowMemoryWhileAppInBackground:
         return 1;

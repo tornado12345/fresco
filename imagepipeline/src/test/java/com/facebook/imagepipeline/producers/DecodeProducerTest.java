@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -12,8 +12,6 @@ import static org.mockito.Mockito.*;
 
 import android.media.ExifInterface;
 import android.net.Uri;
-import android.support.annotation.Nullable;
-import com.facebook.common.internal.Supplier;
 import com.facebook.common.memory.ByteArrayPool;
 import com.facebook.common.memory.PooledByteBuffer;
 import com.facebook.common.references.CloseableReference;
@@ -33,6 +31,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import javax.annotation.Nullable;
 import org.junit.*;
 import org.junit.runner.*;
 import org.mockito.*;
@@ -44,7 +43,7 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
 @RunWith(RobolectricTestRunner.class)
-@PowerMockIgnore({"org.mockito.*", "org.robolectric.*", "android.*"})
+@PowerMockIgnore({"org.mockito.*", "org.robolectric.*", "androidx.*", "android.*"})
 @Config(manifest = Config.NONE)
 @PrepareForTest({JobScheduler.class, ProgressiveJpegParser.class, DecodeProducer.class})
 public class DecodeProducerTest {
@@ -60,6 +59,7 @@ public class DecodeProducerTest {
   private static final int IMAGE_SIZE = 1000;
   private static final int IMAGE_ROTATION_ANGLE = 0;
   private static final int IMAGE_EXIF_ORIENTATION = ExifInterface.ORIENTATION_NORMAL;
+  private static final int MAX_BITMAP_SIZE = 2024;
 
   @Mock public ByteArrayPool mByteArrayPool;
   @Mock public Executor mExecutor;
@@ -77,7 +77,6 @@ public class DecodeProducerTest {
 
   @Mock public ProgressiveJpegParser mProgressiveJpegParser;
   @Mock public JobScheduler mJobScheduler;
-  @Mock public Supplier<Boolean> mExperimentalResizingEnabledSupplier;
 
   private DecodeProducer mDecodeProducer;
 
@@ -104,7 +103,6 @@ public class DecodeProducerTest {
     PowerMockito.mockStatic(JobScheduler.class);
     PowerMockito.whenNew(JobScheduler.class).withAnyArguments()
         .thenReturn(mJobScheduler);
-    when(mExperimentalResizingEnabledSupplier.get()).thenReturn(false);
 
     mDecodeProducer =
         new DecodeProducer(
@@ -116,7 +114,7 @@ public class DecodeProducerTest {
             false, /* Set resizeAndRotateForNetwork to false */
             false, /* We don't cancel when the request is cancelled */
             mInputProducer,
-            mExperimentalResizingEnabledSupplier); /* No experimental resizing */
+            MAX_BITMAP_SIZE);
 
     PooledByteBuffer pooledByteBuffer = mockPooledByteBuffer(IMAGE_SIZE);
     mByteBufferRef = CloseableReference.of(pooledByteBuffer);
@@ -131,6 +129,8 @@ public class DecodeProducerTest {
   private static EncodedImage mockEncodedJpeg(CloseableReference<PooledByteBuffer> ref) {
     final EncodedImage encodedImage = new EncodedImage(ref);
     encodedImage.setImageFormat(DefaultImageFormats.JPEG);
+    encodedImage.setWidth(IMAGE_WIDTH);
+    encodedImage.setHeight(IMAGE_HEIGHT);
     return encodedImage;
   }
 
@@ -392,7 +392,6 @@ public class DecodeProducerTest {
       throws Exception {
     int resizedWidth = 10;
     int resizedHeight = 10;
-    when(mExperimentalResizingEnabledSupplier.get()).thenReturn(true);
     setupLocalUri(ResizeOptions.forDimensions(resizedWidth, resizedHeight));
 
     produceResults();
@@ -409,7 +408,6 @@ public class DecodeProducerTest {
       throws Exception {
     int resizedWidth = 10;
     int resizedHeight = 10;
-    when(mExperimentalResizingEnabledSupplier.get()).thenReturn(true);
     setupNetworkUri(ResizeOptions.forDimensions(resizedWidth, resizedHeight));
 
     produceResults();

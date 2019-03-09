@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.NotThreadSafe;
 
@@ -168,7 +170,11 @@ public abstract class BasePool<V> implements Pool<V> {
 
     // initialize the buckets
     mBuckets = new SparseArray<Bucket<V>>();
-    initBuckets(new SparseIntArray(0));
+    if (mPoolParams.fixBucketsReinitialization) {
+      initBuckets();
+    } else {
+      legacyInitBuckets(new SparseIntArray(0));
+    }
 
     mInUseValues = Sets.newIdentityHashSet();
 
@@ -182,6 +188,12 @@ public abstract class BasePool<V> implements Pool<V> {
   protected void initialize() {
     mMemoryTrimmableRegistry.registerMemoryTrimmable(this);
     mPoolStatsTracker.setBasePool(this);
+  }
+
+  @Nullable
+  protected synchronized V getValue(Bucket<V> bucket) {
+    //noinspection deprecation
+    return bucket.get();
   }
 
   /**
@@ -207,7 +219,7 @@ public abstract class BasePool<V> implements Pool<V> {
 
       if (bucket != null) {
         // find an existing value that we can reuse
-        V value = bucket.get();
+        V value = getValue(bucket);
         if (value != null) {
           Preconditions.checkState(mInUseValues.add(value));
 
@@ -441,11 +453,12 @@ public abstract class BasePool<V> implements Pool<V> {
   }
 
   /**
-   * Initialize the list of buckets. Get the bucket sizes (and bucket lengths) from the bucket
-   * sizes provider
+   * Initialize the list of buckets. Get the bucket sizes (and bucket lengths) from the bucket sizes
+   * provider
+   *
    * @param inUseCounts map of current buckets and their in use counts
    */
-  private synchronized void initBuckets(SparseIntArray inUseCounts) {
+  private synchronized void legacyInitBuckets(SparseIntArray inUseCounts) {
     Preconditions.checkNotNull(inUseCounts);
 
     // clear out all the buckets
@@ -463,12 +476,70 @@ public abstract class BasePool<V> implements Pool<V> {
             new Bucket<V>(
                 getSizeInBytes(bucketSize),
                 maxLength,
-                bucketInUseCount));
+                bucketInUseCount,
+                mPoolParams.fixBucketsReinitialization));
       }
       mAllowNewBuckets = false;
     } else {
       mAllowNewBuckets = true;
     }
+  }
+
+  /**
+   * Initialize the list of buckets. Get the bucket sizes (and bucket lengths) from the bucket sizes
+   * provider
+   */
+  private synchronized void initBuckets() {
+    final SparseIntArray bucketSizes = mPoolParams.bucketSizes;
+
+    // create the buckets
+    if (bucketSizes != null) {
+      fillBuckets(bucketSizes);
+      mAllowNewBuckets = false;
+    } else {
+      mAllowNewBuckets = true;
+    }
+  }
+
+  /**
+   * Clears and fills {@code mBuckets} with buckets
+   *
+   * @param bucketSizes bucket size to bucket's max length
+   */
+  private void fillBuckets(SparseIntArray bucketSizes) {
+    mBuckets.clear();
+    for (int i = 0; i < bucketSizes.size(); ++i) {
+      final int bucketSize = bucketSizes.keyAt(i);
+      final int maxLength = bucketSizes.valueAt(i);
+      mBuckets.put(
+          bucketSize,
+          new Bucket<V>(
+              getSizeInBytes(bucketSize), maxLength, 0, mPoolParams.fixBucketsReinitialization));
+    }
+  }
+
+  /** Clears and fills {@code mBuckets} with buckets */
+  private List<Bucket<V>> refillBuckets() {
+    List<Bucket<V>> bucketsToTrim = new ArrayList<>(mBuckets.size());
+
+    for (int i = 0, len = mBuckets.size(); i < len; ++i) {
+      final Bucket<V> oldBucket = mBuckets.valueAt(i);
+      final int bucketSize = oldBucket.mItemSize;
+      final int maxLength = oldBucket.mMaxLength;
+      final int bucketInUseCount = oldBucket.getInUseCount();
+      if (oldBucket.getFreeListSize() > 0) {
+        bucketsToTrim.add(oldBucket);
+      }
+      mBuckets.setValueAt(
+          i,
+          new Bucket<V>(
+              getSizeInBytes(bucketSize),
+              maxLength,
+              bucketInUseCount,
+              mPoolParams.fixBucketsReinitialization));
+    }
+
+    return bucketsToTrim;
   }
 
   /**
@@ -479,20 +550,25 @@ public abstract class BasePool<V> implements Pool<V> {
    */
   @VisibleForTesting
   void trimToNothing() {
-    final List<Bucket<V>> bucketsToTrim = new ArrayList<>(mBuckets.size());
-    final SparseIntArray inUseCounts = new SparseIntArray();
+    final List<Bucket<V>> bucketsToTrim;
 
     synchronized (this) {
-      for (int i = 0; i < mBuckets.size(); ++i) {
-        final Bucket<V> bucket = mBuckets.valueAt(i);
-        if (bucket.getFreeListSize() > 0) {
-          bucketsToTrim.add(bucket);
-        }
-        inUseCounts.put(mBuckets.keyAt(i), bucket.getInUseCount());
-      }
+      if (mPoolParams.fixBucketsReinitialization) {
+        bucketsToTrim = refillBuckets();
+      } else {
+        bucketsToTrim = new ArrayList<>(mBuckets.size());
+        final SparseIntArray inUseCounts = new SparseIntArray();
 
-      // reinitialize the buckets
-      initBuckets(inUseCounts);
+        for (int i = 0; i < mBuckets.size(); ++i) {
+          final Bucket<V> bucket = mBuckets.valueAt(i);
+          if (bucket.getFreeListSize() > 0) {
+            bucketsToTrim.add(bucket);
+          }
+          inUseCounts.put(mBuckets.keyAt(i), bucket.getInUseCount());
+        }
+
+        legacyInitBuckets(inUseCounts);
+      }
 
       // free up the stats
       mFree.reset();
@@ -627,9 +703,10 @@ public abstract class BasePool<V> implements Pool<V> {
 
   Bucket<V> newBucket(int bucketedSize) {
     return new Bucket<V>(
-        /*itemSize*/getSizeInBytes(bucketedSize),
-        /*maxLength*/Integer.MAX_VALUE,
-        /*inUseLength*/0);
+        /*itemSize*/ getSizeInBytes(bucketedSize),
+        /*maxLength*/ Integer.MAX_VALUE,
+        /*inUseLength*/ 0,
+        mPoolParams.fixBucketsReinitialization);
   }
 
   /**

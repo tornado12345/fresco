@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -73,54 +73,6 @@ static void Bitmaps_pinBitmap(
   }
 }
 
-static jobject Bitmaps_getByteBuffer(
-  JNIEnv* env,
-  jclass clazz,
-  jobject bitmap,
-  jlong offset,
-  jlong size) {
-  UNUSED(clazz);
-  void* pixelPtr;
-  AndroidBitmapInfo bitmapInfo;
-
-  int rc = AndroidBitmap_getInfo(env, bitmap, &bitmapInfo);
-  if (rc != ANDROID_BITMAP_RESULT_SUCCESS) {
-    safe_throw_exception(env, "Failed to get Bitmap info");
-    return NULL;
-  }
-
-  if (bitmapInfo.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
-    safe_throw_exception(env, "Unexpected bitmap format");
-    return NULL;
-  }
-
-  jlong arrayLength = bitmapInfo.width * bitmapInfo.height * 4;
-  if (offset < 0 || size < 0 || offset > arrayLength || arrayLength - offset < size) {
-    safe_throw_exception(env, "Index out of bounds");
-    return NULL;
-  }
-
-  rc = AndroidBitmap_lockPixels(env, bitmap, &pixelPtr);
-  if (rc != ANDROID_BITMAP_RESULT_SUCCESS) {
-    safe_throw_exception(env, "Failed to lock Bitmap pixels");
-    return NULL;
-  }
-
-  pixelPtr = (void*) ((uint8_t*) pixelPtr + offset);
-  return (*env)->NewDirectByteBuffer(env, pixelPtr, size);
-}
-
-static void Bitmaps_releaseByteBuffer(
-  JNIEnv* env,
-  jclass clazz,
-  jobject bitmap) {
-  UNUSED(clazz);
-  int rc = AndroidBitmap_unlockPixels(env, bitmap);
-  if (rc != ANDROID_BITMAP_RESULT_SUCCESS) {
-    safe_throw_exception(env, "Failed to unlock Bitmap pixels");
-  }
-}
-
 /**
  * Efficiently copies pixels between bitmaps.
  */
@@ -170,18 +122,9 @@ static void Bitmaps_copyBitmap(
 }
 
 static JNINativeMethod bitmaps_native_methods[] = {
-  { "nativePinBitmap",
-    "(Landroid/graphics/Bitmap;)V",
-    (void*) Bitmaps_pinBitmap },
   { "nativeCopyBitmap",
     "(Landroid/graphics/Bitmap;ILandroid/graphics/Bitmap;II)V",
     (void*) Bitmaps_copyBitmap },
-  { "nativeGetByteBuffer",
-    "(Landroid/graphics/Bitmap;JJ)Ljava/nio/ByteBuffer;",
-    (void*) Bitmaps_getByteBuffer },
-  { "nativeReleaseByteBuffer",
-    "(Landroid/graphics/Bitmap;)V",
-    (void*) Bitmaps_releaseByteBuffer },
 };
 
 jint registerBitmapsMethods(JNIEnv* env) {
@@ -205,6 +148,40 @@ jint registerBitmapsMethods(JNIEnv* env) {
       bitmaps_class,
       bitmaps_native_methods,
       ARRAY_SIZE(bitmaps_native_methods));
+  if (rc != JNI_OK) {
+    return JNI_ERR;
+  }
+
+  return JNI_VERSION_1_6;
+}
+
+static JNINativeMethod dalvik_decoder_native_methods[] = {
+  { "nativePinBitmap",
+    "(Landroid/graphics/Bitmap;)V",
+    (void*) Bitmaps_pinBitmap },
+};
+
+jint registerDalvikDecoderMethods(JNIEnv* env) {
+  jclass runtime_exception = (*env)->FindClass(
+      env,
+      "java/lang/RuntimeException");
+  if (!runtime_exception) {
+    return JNI_ERR;
+  }
+  runtime_exception_class = (*env)->NewGlobalRef(env, runtime_exception);
+
+  jclass dalvik_decoder_class = (*env)->FindClass(
+       env,
+      "com/facebook/imagepipeline/nativecode/DalvikPurgeableDecoder");
+  if (!dalvik_decoder_class) {
+    return JNI_ERR;
+  }
+
+  int rc = (*env)->RegisterNatives(
+      env,
+      dalvik_decoder_class,
+      dalvik_decoder_native_methods,
+      ARRAY_SIZE(dalvik_decoder_native_methods));
   if (rc != JNI_OK) {
     return JNI_ERR;
   }

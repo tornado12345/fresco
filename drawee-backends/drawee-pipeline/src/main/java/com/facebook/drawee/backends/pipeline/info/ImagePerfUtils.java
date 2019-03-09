@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -14,10 +14,12 @@ public class ImagePerfUtils {
         return "requested";
       case ImageLoadStatus.ORIGIN_AVAILABLE:
         return "origin_available";
-      case ImageLoadStatus.AVAILABLE:
-        return "available";
+      case ImageLoadStatus.SUCCESS:
+        return "success";
       case ImageLoadStatus.CANCELED:
         return "canceled";
+      case ImageLoadStatus.INTERMEDIATE_AVAILABLE:
+        return "intermediate_available";
       case ImageLoadStatus.ERROR:
         return "error";
       default:

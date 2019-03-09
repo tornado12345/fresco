@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -29,6 +29,7 @@ import com.facebook.imagepipeline.image.EncodedImage;
 import com.facebook.imagepipeline.producers.BitmapMemoryCacheKeyMultiplexProducer;
 import com.facebook.imagepipeline.producers.BitmapMemoryCacheProducer;
 import com.facebook.imagepipeline.producers.DecodeProducer;
+import com.facebook.imagepipeline.producers.DiskCacheReadProducer;
 import com.facebook.imagepipeline.producers.EncodedMemoryCacheProducer;
 import com.facebook.imagepipeline.producers.LocalAssetFetchProducer;
 import com.facebook.imagepipeline.producers.LocalContentUriFetchProducer;
@@ -48,6 +49,8 @@ import com.facebook.imagepipeline.producers.ThrottlingProducer;
 import com.facebook.imagepipeline.producers.ThumbnailBranchProducer;
 import com.facebook.imagepipeline.producers.ThumbnailProducer;
 import com.facebook.imagepipeline.request.ImageRequest;
+import com.facebook.imagepipeline.systrace.FrescoSystrace;
+import com.facebook.imagepipeline.transcoder.ImageTranscoderFactory;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -60,8 +63,10 @@ public class ProducerSequenceFactory {
   private final boolean mWebpSupportEnabled;
   private final boolean mPartialImageCachingEnabled;
   private final ThreadHandoffProducerQueue mThreadHandoffProducerQueue;
-  private final boolean mUseDownsamplingRatio;
+  private final boolean mDownsampleEnabled;
   private final boolean mUseBitmapPrepareToDraw;
+  private final boolean mDiskCacheEnabled;
+  private final ImageTranscoderFactory mImageTranscoderFactory;
 
   // Saved sequences
   @VisibleForTesting Producer<CloseableReference<CloseableImage>> mNetworkFetchSequence;
@@ -99,9 +104,11 @@ public class ProducerSequenceFactory {
       boolean resizeAndRotateEnabledForNetwork,
       boolean webpSupportEnabled,
       ThreadHandoffProducerQueue threadHandoffProducerQueue,
-      boolean useDownsamplingRatio,
+      boolean downSampleEnabled,
       boolean useBitmapPrepareToDraw,
-      boolean partialImageCachingEnabled) {
+      boolean partialImageCachingEnabled,
+      boolean diskCacheEnabled,
+      ImageTranscoderFactory imageTranscoderFactory) {
     mContentResolver = contentResolver;
     mProducerFactory = producerFactory;
     mNetworkFetcher = networkFetcher;
@@ -111,9 +118,11 @@ public class ProducerSequenceFactory {
     mCloseableImagePrefetchSequences = new HashMap<>();
     mBitmapPrepareSequences = new HashMap<>();
     mThreadHandoffProducerQueue = threadHandoffProducerQueue;
-    mUseDownsamplingRatio = useDownsamplingRatio;
+    mDownsampleEnabled = downSampleEnabled;
     mUseBitmapPrepareToDraw = useBitmapPrepareToDraw;
     mPartialImageCachingEnabled = partialImageCachingEnabled;
+    mDiskCacheEnabled = diskCacheEnabled;
+    mImageTranscoderFactory = imageTranscoderFactory;
   }
 
   /**
@@ -125,19 +134,28 @@ public class ProducerSequenceFactory {
    */
   public Producer<CloseableReference<PooledByteBuffer>> getEncodedImageProducerSequence(
       ImageRequest imageRequest) {
-    validateEncodedImageRequest(imageRequest);
-    final Uri uri = imageRequest.getSourceUri();
+    try {
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.beginSection("ProducerSequenceFactory#getEncodedImageProducerSequence");
+      }
+      validateEncodedImageRequest(imageRequest);
+      final Uri uri = imageRequest.getSourceUri();
 
-    switch (imageRequest.getSourceUriType()) {
-      case SOURCE_TYPE_NETWORK:
-        return getNetworkFetchEncodedImageProducerSequence();
-      case SOURCE_TYPE_LOCAL_VIDEO_FILE:
-      case SOURCE_TYPE_LOCAL_IMAGE_FILE:
-        return getLocalFileFetchEncodedImageProducerSequence();
-      default:
-        throw new IllegalArgumentException(
-            "Unsupported uri scheme for encoded image fetch! Uri is: "
-                + getShortenedUriString(uri));
+      switch (imageRequest.getSourceUriType()) {
+        case SOURCE_TYPE_NETWORK:
+          return getNetworkFetchEncodedImageProducerSequence();
+        case SOURCE_TYPE_LOCAL_VIDEO_FILE:
+        case SOURCE_TYPE_LOCAL_IMAGE_FILE:
+          return getLocalFileFetchEncodedImageProducerSequence();
+        default:
+          throw new IllegalArgumentException(
+              "Unsupported uri scheme for encoded image fetch! Uri is: "
+                  + getShortenedUriString(uri));
+      }
+    } finally {
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.endSection();
+      }
     }
   }
 
@@ -147,9 +165,24 @@ public class ProducerSequenceFactory {
   public Producer<CloseableReference<PooledByteBuffer>>
   getNetworkFetchEncodedImageProducerSequence() {
     synchronized (this) {
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.beginSection(
+            "ProducerSequenceFactory#getNetworkFetchEncodedImageProducerSequence");
+      }
       if (mNetworkEncodedImageProducerSequence == null) {
-        mNetworkEncodedImageProducerSequence = new RemoveImageTransformMetaDataProducer(
-            getBackgroundNetworkFetchToEncodedMemorySequence());
+        if (FrescoSystrace.isTracing()) {
+          FrescoSystrace.beginSection(
+              "ProducerSequenceFactory#getNetworkFetchEncodedImageProducerSequence:init");
+        }
+        mNetworkEncodedImageProducerSequence =
+            new RemoveImageTransformMetaDataProducer(
+                getBackgroundNetworkFetchToEncodedMemorySequence());
+        if (FrescoSystrace.isTracing()) {
+          FrescoSystrace.endSection();
+        }
+      }
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.endSection();
       }
     }
     return mNetworkEncodedImageProducerSequence;
@@ -161,9 +194,24 @@ public class ProducerSequenceFactory {
   public Producer<CloseableReference<PooledByteBuffer>>
   getLocalFileFetchEncodedImageProducerSequence() {
     synchronized (this) {
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.beginSection(
+            "ProducerSequenceFactory#getLocalFileFetchEncodedImageProducerSequence");
+      }
       if (mLocalFileEncodedImageProducerSequence == null) {
-        mLocalFileEncodedImageProducerSequence = new RemoveImageTransformMetaDataProducer(
-            getBackgroundLocalFileFetchToEncodeMemorySequence());
+        if (FrescoSystrace.isTracing()) {
+          FrescoSystrace.beginSection(
+              "ProducerSequenceFactory#getLocalFileFetchEncodedImageProducerSequence:init");
+        }
+        mLocalFileEncodedImageProducerSequence =
+            new RemoveImageTransformMetaDataProducer(
+                getBackgroundLocalFileFetchToEncodeMemorySequence());
+        if (FrescoSystrace.isTracing()) {
+          FrescoSystrace.endSection();
+        }
+      }
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.endSection();
       }
     }
     return mLocalFileEncodedImageProducerSequence;
@@ -210,6 +258,9 @@ public class ProducerSequenceFactory {
    */
   public Producer<CloseableReference<CloseableImage>> getDecodedImageProducerSequence(
       ImageRequest imageRequest) {
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.beginSection("ProducerSequenceFactory#getDecodedImageProducerSequence");
+    }
     Producer<CloseableReference<CloseableImage>> pipelineSequence =
         getBasicDecodedImageSequence(imageRequest);
 
@@ -220,7 +271,9 @@ public class ProducerSequenceFactory {
     if (mUseBitmapPrepareToDraw) {
       pipelineSequence = getBitmapPrepareSequence(pipelineSequence);
     }
-
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.endSection();
+    }
     return pipelineSequence;
   }
 
@@ -244,83 +297,137 @@ public class ProducerSequenceFactory {
 
   private Producer<CloseableReference<CloseableImage>> getBasicDecodedImageSequence(
       ImageRequest imageRequest) {
-    Preconditions.checkNotNull(imageRequest);
+    try {
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.beginSection("ProducerSequenceFactory#getBasicDecodedImageSequence");
+      }
+      Preconditions.checkNotNull(imageRequest);
 
-    Uri uri = imageRequest.getSourceUri();
-    Preconditions.checkNotNull(uri, "Uri is null.");
+      Uri uri = imageRequest.getSourceUri();
+      Preconditions.checkNotNull(uri, "Uri is null.");
 
-    switch (imageRequest.getSourceUriType()) {
-      case SOURCE_TYPE_NETWORK:
-        return getNetworkFetchSequence();
-      case SOURCE_TYPE_LOCAL_VIDEO_FILE:
-        return getLocalVideoFileFetchSequence();
-      case SOURCE_TYPE_LOCAL_IMAGE_FILE:
-        return getLocalImageFileFetchSequence();
-      case SOURCE_TYPE_LOCAL_CONTENT:
-        if (MediaUtils.isVideo(mContentResolver.getType(uri))) {
+      switch (imageRequest.getSourceUriType()) {
+        case SOURCE_TYPE_NETWORK:
+          return getNetworkFetchSequence();
+        case SOURCE_TYPE_LOCAL_VIDEO_FILE:
           return getLocalVideoFileFetchSequence();
-        }
-        return getLocalContentUriFetchSequence();
-      case SOURCE_TYPE_LOCAL_ASSET:
-        return getLocalAssetFetchSequence();
-      case SOURCE_TYPE_LOCAL_RESOURCE:
-        return getLocalResourceFetchSequence();
-      case SOURCE_TYPE_QUALIFIED_RESOURCE:
-        return getQualifiedResourceFetchSequence();
-      case SOURCE_TYPE_DATA:
-        return getDataFetchSequence();
-      default:
-        throw new IllegalArgumentException(
-            "Unsupported uri scheme! Uri is: " + getShortenedUriString(uri));
+        case SOURCE_TYPE_LOCAL_IMAGE_FILE:
+          return getLocalImageFileFetchSequence();
+        case SOURCE_TYPE_LOCAL_CONTENT:
+          if (MediaUtils.isVideo(mContentResolver.getType(uri))) {
+            return getLocalVideoFileFetchSequence();
+          }
+          return getLocalContentUriFetchSequence();
+        case SOURCE_TYPE_LOCAL_ASSET:
+          return getLocalAssetFetchSequence();
+        case SOURCE_TYPE_LOCAL_RESOURCE:
+          return getLocalResourceFetchSequence();
+        case SOURCE_TYPE_QUALIFIED_RESOURCE:
+          return getQualifiedResourceFetchSequence();
+        case SOURCE_TYPE_DATA:
+          return getDataFetchSequence();
+        default:
+          throw new IllegalArgumentException(
+              "Unsupported uri scheme! Uri is: " + getShortenedUriString(uri));
+      }
+    } finally {
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.endSection();
+      }
     }
   }
 
   /**
-   * swallow result if prefetch -> bitmap cache get ->
-   * background thread hand-off -> multiplex -> bitmap cache -> decode -> multiplex ->
-   * encoded cache -> disk cache -> (webp transcode) -> network fetch.
+   * swallow result if prefetch -> bitmap cache get -> background thread hand-off -> multiplex ->
+   * bitmap cache -> decode -> multiplex -> encoded cache -> disk cache -> (webp transcode) ->
+   * network fetch.
    */
   private synchronized Producer<CloseableReference<CloseableImage>> getNetworkFetchSequence() {
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.beginSection("ProducerSequenceFactory#getNetworkFetchSequence");
+    }
     if (mNetworkFetchSequence == null) {
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.beginSection("ProducerSequenceFactory#getNetworkFetchSequence:init");
+      }
       mNetworkFetchSequence =
           newBitmapCacheGetToDecodeSequence(getCommonNetworkFetchToEncodedMemorySequence());
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.endSection();
+      }
+    }
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.endSection();
     }
     return mNetworkFetchSequence;
   }
 
   /**
-   * background-thread hand-off -> multiplex -> encoded cache ->
-   * disk cache -> (webp transcode) -> network fetch.
+   * background-thread hand-off -> multiplex -> encoded cache -> disk cache -> (webp transcode) ->
+   * network fetch.
    */
   private synchronized Producer<EncodedImage> getBackgroundNetworkFetchToEncodedMemorySequence() {
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.beginSection(
+          "ProducerSequenceFactory#getBackgroundNetworkFetchToEncodedMemorySequence");
+    }
     if (mBackgroundNetworkFetchToEncodedMemorySequence == null) {
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.beginSection(
+            "ProducerSequenceFactory#getBackgroundNetworkFetchToEncodedMemorySequence:init");
+      }
       // Use hand-off producer to ensure that we don't do any unnecessary work on the UI thread.
       mBackgroundNetworkFetchToEncodedMemorySequence =
           mProducerFactory.newBackgroundThreadHandoffProducer(
-              getCommonNetworkFetchToEncodedMemorySequence(),
-              mThreadHandoffProducerQueue);
+              getCommonNetworkFetchToEncodedMemorySequence(), mThreadHandoffProducerQueue);
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.endSection();
+      }
+    }
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.endSection();
     }
     return mBackgroundNetworkFetchToEncodedMemorySequence;
   }
 
   /**
-   * swallow-result -> background-thread hand-off -> multiplex -> encoded cache ->
-   * disk cache -> (webp transcode) -> network fetch.
+   * swallow-result -> background-thread hand-off -> multiplex -> encoded cache -> disk cache ->
+   * (webp transcode) -> network fetch.
    */
   private synchronized Producer<Void> getNetworkFetchToEncodedMemoryPrefetchSequence() {
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.beginSection(
+          "ProducerSequenceFactory#getNetworkFetchToEncodedMemoryPrefetchSequence");
+    }
     if (mNetworkFetchToEncodedMemoryPrefetchSequence == null) {
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.beginSection(
+            "ProducerSequenceFactory#getNetworkFetchToEncodedMemoryPrefetchSequence:init");
+      }
       mNetworkFetchToEncodedMemoryPrefetchSequence =
           ProducerFactory.newSwallowResultProducer(
               getBackgroundNetworkFetchToEncodedMemorySequence());
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.endSection();
+      }
+    }
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.endSection();
     }
     return mNetworkFetchToEncodedMemoryPrefetchSequence;
   }
 
-  /**
-   * multiplex -> encoded cache -> disk cache -> (webp transcode) -> network fetch.
-   */
+  /** multiplex -> encoded cache -> disk cache -> (webp transcode) -> network fetch. */
   private synchronized Producer<EncodedImage> getCommonNetworkFetchToEncodedMemorySequence() {
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.beginSection(
+          "ProducerSequenceFactory#getCommonNetworkFetchToEncodedMemorySequence");
+    }
     if (mCommonNetworkFetchToEncodedMemorySequence == null) {
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.beginSection(
+            "ProducerSequenceFactory#getCommonNetworkFetchToEncodedMemorySequence:init");
+      }
       Producer<EncodedImage> inputProducer =
           newEncodedCacheMultiplexToTranscodeSequence(
               mProducerFactory.newNetworkFetchProducer(mNetworkFetcher));
@@ -330,31 +437,59 @@ public class ProducerSequenceFactory {
       mCommonNetworkFetchToEncodedMemorySequence =
           mProducerFactory.newResizeAndRotateProducer(
               mCommonNetworkFetchToEncodedMemorySequence,
-              mResizeAndRotateEnabledForNetwork,
-              mUseDownsamplingRatio);
+              mResizeAndRotateEnabledForNetwork && !mDownsampleEnabled,
+              mImageTranscoderFactory);
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.endSection();
+      }
+    }
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.endSection();
     }
     return mCommonNetworkFetchToEncodedMemorySequence;
   }
 
   /**
-   * swallow-result -> background-thread hand-off -> multiplex -> encoded cache ->
-   * disk cache -> (webp transcode) -> local file fetch.
+   * swallow-result -> background-thread hand-off -> multiplex -> encoded cache -> disk cache ->
+   * (webp transcode) -> local file fetch.
    */
   private synchronized Producer<Void> getLocalFileFetchToEncodedMemoryPrefetchSequence() {
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.beginSection(
+          "ProducerSequenceFactory#getLocalFileFetchToEncodedMemoryPrefetchSequence");
+    }
     if (mLocalFileFetchToEncodedMemoryPrefetchSequence == null) {
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.beginSection(
+            "ProducerSequenceFactory#getLocalFileFetchToEncodedMemoryPrefetchSequence:init");
+      }
       mLocalFileFetchToEncodedMemoryPrefetchSequence =
           ProducerFactory.newSwallowResultProducer(
               getBackgroundLocalFileFetchToEncodeMemorySequence());
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.endSection();
+      }
+    }
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.endSection();
     }
     return mLocalFileFetchToEncodedMemoryPrefetchSequence;
   }
 
   /**
-   * background-thread hand-off -> multiplex -> encoded cache ->
-   * disk cache -> (webp transcode) -> local file fetch
+   * background-thread hand-off -> multiplex -> encoded cache -> disk cache -> (webp transcode) ->
+   * local file fetch
    */
   private synchronized Producer<EncodedImage> getBackgroundLocalFileFetchToEncodeMemorySequence() {
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.beginSection(
+          "ProducerSequenceFactory#getBackgroundLocalFileFetchToEncodeMemorySequence");
+    }
     if (mBackgroundLocalFileFetchToEncodedMemorySequence == null) {
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.beginSection(
+            "ProducerSequenceFactory#getBackgroundLocalFileFetchToEncodeMemorySequence:init");
+      }
       final LocalFileFetchProducer localFileFetchProducer =
           mProducerFactory.newLocalFileFetchProducer();
 
@@ -363,8 +498,13 @@ public class ProducerSequenceFactory {
 
       mBackgroundLocalFileFetchToEncodedMemorySequence =
           mProducerFactory.newBackgroundThreadHandoffProducer(
-              toEncodedMultiplexProducer,
-              mThreadHandoffProducerQueue);
+              toEncodedMultiplexProducer, mThreadHandoffProducerQueue);
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.endSection();
+      }
+    }
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.endSection();
     }
     return mBackgroundLocalFileFetchToEncodedMemorySequence;
   }
@@ -499,10 +639,8 @@ public class ProducerSequenceFactory {
         inputProducer = mProducerFactory.newWebpTranscodeProducer(inputProducer);
       }
       inputProducer = mProducerFactory.newAddImageTransformMetaDataProducer(inputProducer);
-      inputProducer = mProducerFactory.newResizeAndRotateProducer(
-          inputProducer,
-          true,
-          mUseDownsamplingRatio);
+      inputProducer =
+          mProducerFactory.newResizeAndRotateProducer(inputProducer, true, mImageTranscoderFactory);
       mDataFetchSequence = newBitmapCacheGetToDecodeSequence(inputProducer);
     }
     return mDataFetchSequence;
@@ -538,13 +676,22 @@ public class ProducerSequenceFactory {
 
   /**
    * Same as {@code newBitmapCacheGetToBitmapCacheSequence} but with an extra DecodeProducer.
+   *
    * @param inputProducer producer providing the input to the decode
    * @return bitmap cache get to decode sequence
    */
   private Producer<CloseableReference<CloseableImage>> newBitmapCacheGetToDecodeSequence(
       Producer<EncodedImage> inputProducer) {
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.beginSection("ProducerSequenceFactory#newBitmapCacheGetToDecodeSequence");
+    }
     DecodeProducer decodeProducer = mProducerFactory.newDecodeProducer(inputProducer);
-    return newBitmapCacheGetToBitmapCacheSequence(decodeProducer);
+    Producer<CloseableReference<CloseableImage>> result =
+        newBitmapCacheGetToBitmapCacheSequence(decodeProducer);
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.endSection();
+    }
+    return result;
   }
 
   /**
@@ -558,7 +705,9 @@ public class ProducerSequenceFactory {
         (!mWebpSupportEnabled || WebpSupportStatus.sWebpBitmapFactory == null)) {
       inputProducer = mProducerFactory.newWebpTranscodeProducer(inputProducer);
     }
-    inputProducer = newDiskCacheSequence(inputProducer);
+    if (mDiskCacheEnabled) {
+      inputProducer = newDiskCacheSequence(inputProducer);
+    }
     EncodedMemoryCacheProducer encodedMemoryCacheProducer =
         mProducerFactory.newEncodedMemoryCacheProducer(inputProducer);
     return mProducerFactory.newEncodedCacheKeyMultiplexProducer(encodedMemoryCacheProducer);
@@ -566,6 +715,9 @@ public class ProducerSequenceFactory {
 
   private Producer<EncodedImage> newDiskCacheSequence(Producer<EncodedImage> inputProducer) {
     Producer<EncodedImage> cacheWriteProducer;
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.beginSection("ProducerSequenceFactory#newDiskCacheSequence");
+    }
     if (mPartialImageCachingEnabled) {
       Producer<EncodedImage> partialDiskCacheProducer =
           mProducerFactory.newPartialDiskCacheProducer(inputProducer);
@@ -573,9 +725,11 @@ public class ProducerSequenceFactory {
     } else {
       cacheWriteProducer = mProducerFactory.newDiskCacheWriteProducer(inputProducer);
     }
-    Producer<EncodedImage> mediaVariationsProducer =
-        mProducerFactory.newMediaVariationsProducer(cacheWriteProducer);
-    return mProducerFactory.newDiskCacheReadProducer(mediaVariationsProducer);
+    DiskCacheReadProducer result = mProducerFactory.newDiskCacheReadProducer(cacheWriteProducer);
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.endSection();
+    }
+    return result;
   }
 
   /**
@@ -612,9 +766,7 @@ public class ProducerSequenceFactory {
         ProducerFactory.newAddImageTransformMetaDataProducer(inputProducer);
     localImageProducer =
         mProducerFactory.newResizeAndRotateProducer(
-            localImageProducer,
-            true,
-            mUseDownsamplingRatio);
+            localImageProducer, true, mImageTranscoderFactory);
     ThrottlingProducer<EncodedImage>
         localImageThrottlingProducer =
         mProducerFactory.newThrottlingProducer(localImageProducer);
@@ -627,11 +779,8 @@ public class ProducerSequenceFactory {
       ThumbnailProducer<EncodedImage>[] thumbnailProducers) {
     ThumbnailBranchProducer thumbnailBranchProducer =
         mProducerFactory.newThumbnailBranchProducer(thumbnailProducers);
-
     return mProducerFactory.newResizeAndRotateProducer(
-        thumbnailBranchProducer,
-        true,
-        mUseDownsamplingRatio);
+        thumbnailBranchProducer, true, mImageTranscoderFactory);
   }
 
   /**

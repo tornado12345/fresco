@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -13,6 +13,7 @@ import com.facebook.drawee.view.SimpleDraweeView;
 import com.facebook.imagepipeline.core.ImagePipeline;
 import com.facebook.imagepipeline.core.ImagePipelineConfig;
 import com.facebook.imagepipeline.core.ImagePipelineFactory;
+import com.facebook.imagepipeline.systrace.FrescoSystrace;
 import com.facebook.soloader.SoLoader;
 import java.io.IOException;
 import javax.annotation.Nullable;
@@ -49,17 +50,29 @@ public class Fresco {
       Context context,
       @Nullable ImagePipelineConfig imagePipelineConfig,
       @Nullable DraweeConfig draweeConfig) {
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.beginSection("Fresco#initialize");
+    }
     if (sIsInitialized) {
       FLog.w(
           TAG,
-          "Fresco has already been initialized! `Fresco.initialize(...)` should only be called " +
-            "1 single time to avoid memory leaks!");
+          "Fresco has already been initialized! `Fresco.initialize(...)` should only be called "
+              + "1 single time to avoid memory leaks!");
     } else {
       sIsInitialized = true;
     }
     try {
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.beginSection("Fresco.initialize->SoLoader.init");
+      }
       SoLoader.init(context, 0);
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.endSection();
+      }
     } catch (IOException e) {
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.endSection();
+      }
       throw new RuntimeException("Could not initialize SoLoader", e);
     }
     // we should always use the application context to avoid memory leaks
@@ -70,15 +83,22 @@ public class Fresco {
       ImagePipelineFactory.initialize(imagePipelineConfig);
     }
     initializeDrawee(context, draweeConfig);
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.endSection();
+    }
   }
 
   /** Initializes Drawee with the specified config. */
-  private static void initializeDrawee(
-      Context context,
-      @Nullable DraweeConfig draweeConfig) {
+  private static void initializeDrawee(Context context, @Nullable DraweeConfig draweeConfig) {
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.beginSection("Fresco.initializeDrawee");
+    }
     sDraweeControllerBuilderSupplier =
         new PipelineDraweeControllerBuilderSupplier(context, draweeConfig);
     SimpleDraweeView.initialize(sDraweeControllerBuilderSupplier);
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.endSection();
+    }
   }
 
   /** Gets the supplier of Fresco Drawee controller builders. */

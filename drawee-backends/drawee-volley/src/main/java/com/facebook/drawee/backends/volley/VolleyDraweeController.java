@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -37,15 +37,9 @@ public class VolleyDraweeController
   private Supplier<DataSource<Bitmap>> mDataSourceSupplier;
 
   public VolleyDraweeController(
-      Resources resources,
-      DeferredReleaser deferredReleaser,
-      Executor uiThreadExecutor,
-      Supplier<DataSource<Bitmap>> dataSourceSupplier,
-      String id,
-      Object callerContext) {
-    super(deferredReleaser, uiThreadExecutor, id, callerContext);
+      Resources resources, DeferredReleaser deferredReleaser, Executor uiThreadExecutor) {
+    super(deferredReleaser, uiThreadExecutor, null, null);
     mResources = resources;
-    init(dataSourceSupplier);
   }
 
   /**

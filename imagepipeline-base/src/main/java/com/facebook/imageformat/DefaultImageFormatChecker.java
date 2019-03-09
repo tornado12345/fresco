@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -24,13 +24,16 @@ public class DefaultImageFormatChecker implements ImageFormat.FormatChecker {
    * from a stream. After changing any of the type detection algorithms, or adding a new one, this
    * value should be edited.
    */
-  final int MAX_HEADER_LENGTH = Ints.max(
-      EXTENDED_WEBP_HEADER_LENGTH,
-      SIMPLE_WEBP_HEADER_LENGTH,
-      JPEG_HEADER_LENGTH,
-      PNG_HEADER_LENGTH,
-      GIF_HEADER_LENGTH,
-      BMP_HEADER_LENGTH);
+  final int MAX_HEADER_LENGTH =
+      Ints.max(
+          EXTENDED_WEBP_HEADER_LENGTH,
+          SIMPLE_WEBP_HEADER_LENGTH,
+          JPEG_HEADER_LENGTH,
+          PNG_HEADER_LENGTH,
+          GIF_HEADER_LENGTH,
+          BMP_HEADER_LENGTH,
+          ICO_HEADER_LENGTH,
+          HEIF_HEADER_LENGTH);
 
   @Override
   public int getHeaderSize() {
@@ -68,6 +71,14 @@ public class DefaultImageFormatChecker implements ImageFormat.FormatChecker {
 
     if (isBmpHeader(headerBytes, headerSize)) {
       return DefaultImageFormats.BMP;
+    }
+
+    if (isIcoHeader(headerBytes, headerSize)) {
+      return DefaultImageFormats.ICO;
+    }
+
+    if (isHeifHeader(headerBytes, headerSize)) {
+      return DefaultImageFormats.HEIF;
     }
 
     return ImageFormat.UNKNOWN;
@@ -203,5 +214,74 @@ public class DefaultImageFormatChecker implements ImageFormat.FormatChecker {
       return false;
     }
     return ImageFormatCheckerUtils.startsWithPattern(imageHeaderBytes, BMP_HEADER);
+  }
+
+  /** Every ico image starts with 0x00000100 bytes */
+  private static final byte[] ICO_HEADER =
+      new byte[] {(byte) 0x00, (byte) 0x00, (byte) 0x01, (byte) 0x00};
+
+  private static final int ICO_HEADER_LENGTH = ICO_HEADER.length;
+
+  /**
+   * Checks if first headerSize bytes of imageHeaderBytes constitute a valid header for a ico image.
+   * Details on ICO header can be found <a href="https://en.wikipedia.org/wiki/ICO_(file_format)">
+   * </a>
+   *
+   * @param imageHeaderBytes
+   * @param headerSize
+   * @return true if imageHeaderBytes is a valid header for a ico image
+   */
+  private static boolean isIcoHeader(final byte[] imageHeaderBytes, final int headerSize) {
+    if (headerSize < ICO_HEADER.length) {
+      return false;
+    }
+    return ImageFormatCheckerUtils.startsWithPattern(imageHeaderBytes, ICO_HEADER);
+  }
+
+  /**
+   * Every HEIF image starts with a specific signature. It's guaranteed to include "ftyp". The 4th
+   * byte of the header gives us the size of the box, then we have "ftyp" followed by the exact
+   * image format which can be one of: heic, heix, hevc, hevx.
+   */
+  private static final String HEIF_HEADER_PREFIX = "ftyp";
+
+  private static final String[] HEIF_HEADER_SUFFIXES = {
+    "heic", "heix", "hevc", "hevx", "mif1", "msf1"
+  };
+  private static final int HEIF_HEADER_LENGTH =
+      ImageFormatCheckerUtils.asciiBytes(HEIF_HEADER_PREFIX + HEIF_HEADER_SUFFIXES[0]).length;
+
+  /**
+   * Checks if first headerSize bytes of imageHeaderBytes constitute a valid header for a HEIF
+   * image. Details on HEIF header can be found at: <a
+   * href="http://nokiatech.github.io/heif/technical.html"></a>
+   *
+   * @param imageHeaderBytes
+   * @param headerSize
+   * @return true if imageHeaderBytes is a valid header for a HEIF image
+   */
+  private static boolean isHeifHeader(final byte[] imageHeaderBytes, final int headerSize) {
+    if (headerSize < HEIF_HEADER_LENGTH) {
+      return false;
+    }
+
+    final byte boxLength = imageHeaderBytes[3];
+    if (boxLength < 8) {
+      return false;
+    }
+
+    for (final String heifFtype : HEIF_HEADER_SUFFIXES) {
+      final int indexOfHeaderPattern =
+          ImageFormatCheckerUtils.indexOfPattern(
+              imageHeaderBytes,
+              imageHeaderBytes.length,
+              ImageFormatCheckerUtils.asciiBytes(HEIF_HEADER_PREFIX + heifFtype),
+              HEIF_HEADER_LENGTH);
+      if (indexOfHeaderPattern > -1) {
+        return true;
+      }
+    }
+
+    return false;
   }
 }

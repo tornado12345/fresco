@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -13,8 +13,10 @@ import android.graphics.PointF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.NinePatchDrawable;
 import android.os.Build;
 import com.facebook.common.internal.Preconditions;
+import com.facebook.common.logging.FLog;
 import com.facebook.drawee.drawable.DrawableParent;
 import com.facebook.drawee.drawable.ForwardingDrawable;
 import com.facebook.drawee.drawable.MatrixDrawable;
@@ -22,14 +24,18 @@ import com.facebook.drawee.drawable.Rounded;
 import com.facebook.drawee.drawable.RoundedBitmapDrawable;
 import com.facebook.drawee.drawable.RoundedColorDrawable;
 import com.facebook.drawee.drawable.RoundedCornersDrawable;
+import com.facebook.drawee.drawable.RoundedNinePatchDrawable;
 import com.facebook.drawee.drawable.ScaleTypeDrawable;
 import com.facebook.drawee.drawable.ScalingUtils;
+import com.facebook.imagepipeline.systrace.FrescoSystrace;
 import javax.annotation.Nullable;
 
 /**
  * A class that contains helper methods for wrapping and rounding.
  */
 public class WrappingUtils {
+
+  private static final String TAG = "WrappingUtils";
 
   // Empty drawable to be temporarily used for hierarchy manipulations.
   //
@@ -76,12 +82,21 @@ public class WrappingUtils {
       @Nullable Drawable drawable,
       @Nullable ScalingUtils.ScaleType scaleType,
       @Nullable PointF focusPoint) {
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.beginSection("WrappingUtils#maybeWrapWithScaleType");
+    }
     if (drawable == null || scaleType == null) {
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.endSection();
+      }
       return drawable;
     }
     ScaleTypeDrawable scaleTypeDrawable = new ScaleTypeDrawable(drawable, scaleType);
     if (focusPoint != null) {
       scaleTypeDrawable.setFocusPoint(focusPoint);
+    }
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.endSection();
     }
     return scaleTypeDrawable;
   }
@@ -206,14 +221,24 @@ public class WrappingUtils {
   static Drawable maybeWrapWithRoundedOverlayColor(
       @Nullable Drawable drawable,
       @Nullable RoundingParams roundingParams) {
-    if (drawable == null || roundingParams == null ||
-        roundingParams.getRoundingMethod() != RoundingParams.RoundingMethod.OVERLAY_COLOR) {
-      return drawable;
+    try {
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.beginSection("WrappingUtils#maybeWrapWithRoundedOverlayColor");
+      }
+      if (drawable == null
+          || roundingParams == null
+          || roundingParams.getRoundingMethod() != RoundingParams.RoundingMethod.OVERLAY_COLOR) {
+        return drawable;
+      }
+      RoundedCornersDrawable roundedCornersDrawable = new RoundedCornersDrawable(drawable);
+      applyRoundingParams(roundedCornersDrawable, roundingParams);
+      roundedCornersDrawable.setOverlayColor(roundingParams.getOverlayColor());
+      return roundedCornersDrawable;
+    } finally {
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.endSection();
+      }
     }
-    RoundedCornersDrawable roundedCornersDrawable = new RoundedCornersDrawable(drawable);
-    applyRoundingParams(roundedCornersDrawable, roundingParams);
-    roundedCornersDrawable.setOverlayColor(roundingParams.getOverlayColor());
-    return roundedCornersDrawable;
   }
 
   /**
@@ -234,18 +259,28 @@ public class WrappingUtils {
       @Nullable Drawable drawable,
       @Nullable RoundingParams roundingParams,
       Resources resources) {
-    if (drawable == null || roundingParams == null ||
-        roundingParams.getRoundingMethod() != RoundingParams.RoundingMethod.BITMAP_ONLY) {
-      return drawable;
-    }
-    if (drawable instanceof ForwardingDrawable) {
-      DrawableParent parent = findDrawableParentForLeaf((ForwardingDrawable) drawable);
-      Drawable child = parent.setDrawable(sEmptyDrawable);
-      child = applyLeafRounding(child, roundingParams, resources);
-      parent.setDrawable(child);
-      return drawable;
-    } else {
-      return applyLeafRounding(drawable, roundingParams, resources);
+    try {
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.beginSection("WrappingUtils#maybeApplyLeafRounding");
+      }
+      if (drawable == null
+          || roundingParams == null
+          || roundingParams.getRoundingMethod() != RoundingParams.RoundingMethod.BITMAP_ONLY) {
+        return drawable;
+      }
+      if (drawable instanceof ForwardingDrawable) {
+        DrawableParent parent = findDrawableParentForLeaf((ForwardingDrawable) drawable);
+        Drawable child = parent.setDrawable(sEmptyDrawable);
+        child = applyLeafRounding(child, roundingParams, resources);
+        parent.setDrawable(child);
+        return drawable;
+      } else {
+        return applyLeafRounding(drawable, roundingParams, resources);
+      }
+    } finally {
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.endSection();
+      }
     }
   }
 
@@ -270,13 +305,20 @@ public class WrappingUtils {
               bitmapDrawable.getPaint());
       applyRoundingParams(roundedBitmapDrawable, roundingParams);
       return roundedBitmapDrawable;
-    }
-    if (drawable instanceof ColorDrawable &&
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+    } else if (drawable instanceof NinePatchDrawable) {
+      final NinePatchDrawable ninePatchDrawableDrawable = (NinePatchDrawable) drawable;
+      RoundedNinePatchDrawable roundedNinePatchDrawable =
+          new RoundedNinePatchDrawable(ninePatchDrawableDrawable);
+      applyRoundingParams(roundedNinePatchDrawable, roundingParams);
+      return roundedNinePatchDrawable;
+    } else if (drawable instanceof ColorDrawable
+        && Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
       RoundedColorDrawable roundedColorDrawable =
           RoundedColorDrawable.fromColorDrawable((ColorDrawable) drawable);
       applyRoundingParams(roundedColorDrawable, roundingParams);
       return roundedColorDrawable;
+    } else {
+      FLog.w(TAG, "Don't know how to round that drawable: %s", drawable);
     }
     return drawable;
   }
@@ -290,6 +332,7 @@ public class WrappingUtils {
     rounded.setBorder(roundingParams.getBorderColor(), roundingParams.getBorderWidth());
     rounded.setPadding(roundingParams.getPadding());
     rounded.setScaleDownInsideBorders(roundingParams.getScaleDownInsideBorders());
+    rounded.setPaintFilterBitmap(roundingParams.getPaintFilterBitmap());
   }
 
   /**
@@ -301,6 +344,7 @@ public class WrappingUtils {
     rounded.setBorder(Color.TRANSPARENT, 0);
     rounded.setPadding(0);
     rounded.setScaleDownInsideBorders(false);
+    rounded.setPaintFilterBitmap(false);
   }
 
   /**

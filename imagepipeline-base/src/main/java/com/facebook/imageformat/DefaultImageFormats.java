@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -19,12 +19,14 @@ public final class DefaultImageFormats {
   public static final ImageFormat PNG = new ImageFormat("PNG", "png");
   public static final ImageFormat GIF = new ImageFormat("GIF", "gif");
   public static final ImageFormat BMP = new ImageFormat("BMP", "bmp");
+  public static final ImageFormat ICO = new ImageFormat("ICO", "ico");
   public static final ImageFormat WEBP_SIMPLE = new ImageFormat("WEBP_SIMPLE", "webp");
   public static final ImageFormat WEBP_LOSSLESS = new ImageFormat("WEBP_LOSSLESS", "webp");
   public static final ImageFormat WEBP_EXTENDED = new ImageFormat("WEBP_EXTENDED", "webp");
   public static final ImageFormat WEBP_EXTENDED_WITH_ALPHA =
       new ImageFormat("WEBP_EXTENDED_WITH_ALPHA", "webp");
   public static final ImageFormat WEBP_ANIMATED = new ImageFormat("WEBP_ANIMATED", "webp");
+  public static final ImageFormat HEIF = new ImageFormat("HEIF", "heif");
 
   private static ImmutableList<ImageFormat> sAllDefaultFormats;
 
@@ -65,11 +67,13 @@ public final class DefaultImageFormats {
       mDefaultFormats.add(PNG);
       mDefaultFormats.add(GIF);
       mDefaultFormats.add(BMP);
+      mDefaultFormats.add(ICO);
       mDefaultFormats.add(WEBP_SIMPLE);
       mDefaultFormats.add(WEBP_LOSSLESS);
       mDefaultFormats.add(WEBP_EXTENDED);
       mDefaultFormats.add(WEBP_EXTENDED_WITH_ALPHA);
       mDefaultFormats.add(WEBP_ANIMATED);
+      mDefaultFormats.add(HEIF);
       sAllDefaultFormats = ImmutableList.copyOf(mDefaultFormats);
     }
     return sAllDefaultFormats;

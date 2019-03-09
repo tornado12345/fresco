@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -14,6 +14,7 @@ import android.util.AttributeSet;
 import com.facebook.drawee.generic.GenericDraweeHierarchy;
 import com.facebook.drawee.generic.GenericDraweeHierarchyBuilder;
 import com.facebook.drawee.generic.GenericDraweeHierarchyInflater;
+import com.facebook.imagepipeline.systrace.FrescoSystrace;
 import javax.annotation.Nullable;
 
 /**
@@ -51,9 +52,15 @@ public class GenericDraweeView extends DraweeView<GenericDraweeHierarchy> {
   }
 
   protected void inflateHierarchy(Context context, @Nullable AttributeSet attrs) {
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.beginSection("GenericDraweeView#inflateHierarchy");
+    }
     GenericDraweeHierarchyBuilder builder =
         GenericDraweeHierarchyInflater.inflateBuilder(context, attrs);
     setAspectRatio(builder.getDesiredAspectRatio());
     setHierarchy(builder.build());
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.endSection();
+    }
   }
 }

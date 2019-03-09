@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -36,7 +36,7 @@ public class ImageFormat {
   // Unknown image format
   public static final ImageFormat UNKNOWN = new ImageFormat("UNKNOWN", null);
 
-  private final String mFileExtension;
+  private final @Nullable String mFileExtension;
   private final String mName;
 
   public ImageFormat(String name, @Nullable String fileExtension) {

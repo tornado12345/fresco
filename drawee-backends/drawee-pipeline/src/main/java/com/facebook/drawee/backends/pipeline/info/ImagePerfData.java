@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -15,49 +15,79 @@ public class ImagePerfData {
 
   public static final int UNSET = -1;
 
+  private final @Nullable String mControllerId;
   private final @Nullable String mRequestId;
   private final @Nullable Object mCallerContext;
   private final @Nullable ImageRequest mImageRequest;
   private final @Nullable ImageInfo mImageInfo;
 
   private final long mControllerSubmitTimeMs;
+  private final long mControllerIntermediateImageSetTimeMs;
   private final long mControllerFinalImageSetTimeMs;
   private final long mControllerFailureTimeMs;
+  private final long mControllerCancelTimeMs;
 
   private final long mImageRequestStartTimeMs;
   private final long mImageRequestEndTimeMs;
   private final @ImageOrigin int mImageOrigin;
-  private final boolean mIsCanceled;
-  private final boolean mIsSuccessful;
   private final boolean mIsPrefetch;
 
+  private final int mOnScreenWidthPx;
+  private final int mOnScreenHeightPx;
+
+  // Visibility
+  @VisibilityState private final int mVisibilityState;
+  private final long mVisibilityEventTimeMs;
+  private final long mInvisibilityEventTimeMs;
+
+  @Nullable private final String mComponentTag;
+
   public ImagePerfData(
+      @Nullable String controllerId,
       @Nullable String requestId,
       @Nullable ImageRequest imageRequest,
       @Nullable Object callerContext,
       @Nullable ImageInfo imageInfo,
       long controllerSubmitTimeMs,
+      long controllerIntermediateImageSetTimeMs,
       long controllerFinalImageSetTimeMs,
       long controllerFailureTimeMs,
+      long controllerCancelTimeMs,
       long imageRequestStartTimeMs,
       long imageRequestEndTimeMs,
       @ImageOrigin int imageOrigin,
-      boolean isCanceled,
-      boolean isSuccessful,
-      boolean isPrefetch) {
+      boolean isPrefetch,
+      int onScreenWidthPx,
+      int onScreenHeightPx,
+      int visibilityState,
+      long visibilityEventTimeMs,
+      long invisibilityEventTime,
+      @Nullable String componentTag) {
+    mControllerId = controllerId;
     mRequestId = requestId;
     mImageRequest = imageRequest;
     mCallerContext = callerContext;
     mImageInfo = imageInfo;
     mControllerSubmitTimeMs = controllerSubmitTimeMs;
+    mControllerIntermediateImageSetTimeMs = controllerIntermediateImageSetTimeMs;
     mControllerFinalImageSetTimeMs = controllerFinalImageSetTimeMs;
     mControllerFailureTimeMs = controllerFailureTimeMs;
+    mControllerCancelTimeMs = controllerCancelTimeMs;
     mImageRequestStartTimeMs = imageRequestStartTimeMs;
     mImageRequestEndTimeMs = imageRequestEndTimeMs;
     mImageOrigin = imageOrigin;
-    mIsCanceled = isCanceled;
-    mIsSuccessful = isSuccessful;
     mIsPrefetch = isPrefetch;
+    mOnScreenWidthPx = onScreenWidthPx;
+    mOnScreenHeightPx = onScreenHeightPx;
+    mVisibilityState = visibilityState;
+    mVisibilityEventTimeMs = visibilityEventTimeMs;
+    mInvisibilityEventTimeMs = invisibilityEventTime;
+    mComponentTag = componentTag;
+  }
+
+  @Nullable
+  public String getControllerId() {
+    return mControllerId;
   }
 
   @Nullable
@@ -84,6 +114,10 @@ public class ImagePerfData {
     return mControllerSubmitTimeMs;
   }
 
+  public long getControllerIntermediateImageSetTimeMs() {
+    return mControllerIntermediateImageSetTimeMs;
+  }
+
   public long getControllerFinalImageSetTimeMs() {
     return mControllerFinalImageSetTimeMs;
   }
@@ -104,40 +138,70 @@ public class ImagePerfData {
     return mImageOrigin;
   }
 
-  public boolean isCanceled() {
-    return mIsCanceled;
-  }
-
-  public boolean isSuccessful() {
-    return mIsSuccessful;
-  }
-
   public boolean isPrefetch() {
     return mIsPrefetch;
   }
 
+  public int getOnScreenWidthPx() {
+    return mOnScreenWidthPx;
+  }
+
+  public int getOnScreenHeightPx() {
+    return mOnScreenHeightPx;
+  }
+
   public long getFinalImageLoadTimeMs() {
-    if (isSuccessful()) {
-      return getImageRequestEndTimeMs() - getImageRequestStartTimeMs();
+    if (getImageRequestEndTimeMs() == UNSET || getImageRequestStartTimeMs() == UNSET) {
+      return UNSET;
     }
-    return UNSET;
+
+    return getImageRequestEndTimeMs() - getImageRequestStartTimeMs();
+  }
+
+  public long getIntermediateImageLoadTimeMs() {
+    if (getControllerIntermediateImageSetTimeMs() == UNSET || getControllerSubmitTimeMs() == UNSET) {
+      return UNSET;
+    }
+
+    return getControllerIntermediateImageSetTimeMs() - getControllerSubmitTimeMs();
+  }
+
+  public int getVisibilityState() {
+    return mVisibilityState;
+  }
+
+  public long getVisibilityEventTimeMs() {
+    return mVisibilityEventTimeMs;
+  }
+
+  public long getInvisibilityEventTimeMs() {
+    return mInvisibilityEventTimeMs;
+  }
+
+  @Nullable
+  public String getComponentTag() {
+    return mComponentTag;
   }
 
   public String createDebugString() {
     return Objects.toStringHelper(this)
+        .add("controller ID", mControllerId)
         .add("request ID", mRequestId)
         .add("controller submit", mControllerSubmitTimeMs)
         .add("controller final image", mControllerFinalImageSetTimeMs)
         .add("controller failure", mControllerFailureTimeMs)
+        .add("controller cancel", mControllerCancelTimeMs)
         .add("start time", mImageRequestStartTimeMs)
         .add("end time", mImageRequestEndTimeMs)
         .add("origin", ImageOriginUtils.toString(mImageOrigin))
-        .add("canceled", mIsCanceled)
-        .add("successful", mIsSuccessful)
         .add("prefetch", mIsPrefetch)
         .add("caller context", mCallerContext)
         .add("image request", mImageRequest)
         .add("image info", mImageInfo)
+        .add("on-screen width", mOnScreenWidthPx)
+        .add("on-screen height", mOnScreenHeightPx)
+        .add("visibility state", mVisibilityState)
+        .add("component tag", mComponentTag)
         .toString();
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -10,7 +10,6 @@ package com.facebook.drawee.generic;
 import static com.facebook.drawee.drawable.ScalingUtils.ScaleType;
 
 import android.content.Context;
-import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.graphics.drawable.Drawable;
@@ -18,6 +17,7 @@ import android.util.AttributeSet;
 import android.view.View;
 import com.facebook.drawee.R;
 import com.facebook.drawee.drawable.AutoRotateDrawable;
+import com.facebook.imagepipeline.systrace.FrescoSystrace;
 import com.facebook.infer.annotation.ReturnsOwnership;
 import javax.annotation.Nullable;
 
@@ -70,15 +70,21 @@ public class GenericDraweeHierarchyInflater {
   }
 
   /**
-   * Inflates a new hierarchy builder from XML.
-   * The builder can then be modified in order to override XML attributes if necessary.
+   * Inflates a new hierarchy builder from XML. The builder can then be modified in order to
+   * override XML attributes if necessary.
    */
   public static GenericDraweeHierarchyBuilder inflateBuilder(
-      Context context,
-      @Nullable AttributeSet attrs) {
+      Context context, @Nullable AttributeSet attrs) {
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.beginSection("GenericDraweeHierarchyBuilder#inflateBuilder");
+    }
     Resources resources = context.getResources();
     GenericDraweeHierarchyBuilder builder = new GenericDraweeHierarchyBuilder(resources);
-    return updateBuilder(builder, context, attrs);
+    builder = updateBuilder(builder, context, attrs);
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.endSection();
+    }
+    return builder;
   }
 
   /**

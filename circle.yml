@@ -18,15 +18,17 @@ jobs:
   build:
     working_directory: ~/fresco
     docker:
-      - image: circleci/android:api-27-alpha
+      - image: circleci/android:api-28
     steps:
       - checkout
+      - run: yes | sdkmanager --licenses || exit 0
+      - run: yes | sdkmanager --update || exit 0
       - run:
           name: Setup NDK
           command: |
-            wget --quiet https://dl.google.com/android/repository/android-ndk-r16b-linux-x86_64.zip
-            unzip -q android-ndk-r16b-linux-x86_64.zip -d /home/circleci
-            echo "ndk.dir=/home/circleci/android-ndk-r16b" >> /home/circleci/fresco/local.properties
+            wget --quiet https://dl.google.com/android/repository/android-ndk-r17b-linux-x86_64.zip
+            unzip -q android-ndk-r17b-linux-x86_64.zip -d /home/circleci
+            echo "ndk.dir=/home/circleci/android-ndk-r17b" >> /home/circleci/fresco/local.properties
       - run:
           name: "NDK Fix: https://github.com/android-ndk/ndk/issues/188"
           command: sudo apt-get install file
@@ -53,9 +55,9 @@ jobs:
           command: ./gradlew test assembleDebug -PdisablePreDex
       - save-cache: *save-cache-gradle
       - run:
-          name: Run Instrmentation Tests
+          name: Run Instrumentation Tests
           command: |
-            ./gradlew :samples:showcase:connectedInternalDebugAndroidTest -PdisablePreDex
+            ./gradlew :samples:showcase:connectedInternalInstrumentationAndroidTest -PdisablePreDex
       - run:
           name: Copy Results
           command: |

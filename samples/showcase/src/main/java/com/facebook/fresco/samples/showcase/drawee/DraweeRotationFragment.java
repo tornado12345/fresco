@@ -13,7 +13,6 @@ package com.facebook.fresco.samples.showcase.drawee;
 
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,10 +20,12 @@ import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
+import androidx.annotation.Nullable;
 import com.facebook.drawee.view.SimpleDraweeView;
 import com.facebook.fresco.samples.showcase.BaseShowcaseFragment;
 import com.facebook.fresco.samples.showcase.R;
 import com.facebook.fresco.samples.showcase.misc.ImageUriProvider;
+import com.facebook.imagepipeline.common.ImageDecodeOptionsBuilder;
 import com.facebook.imagepipeline.common.RotationOptions;
 import com.facebook.imagepipeline.request.ImageRequest;
 import com.facebook.imagepipeline.request.ImageRequestBuilder;
@@ -76,9 +77,11 @@ public class DraweeRotationFragment extends BaseShowcaseFragment {
   }
 
   private void setRotationOptions(RotationOptions rotationOptions) {
-    ImageRequest imageRequest = ImageRequestBuilder.newBuilderWithSource(mUri)
-        .setRotationOptions(rotationOptions)
-        .build();
+    ImageRequest imageRequest =
+        ImageRequestBuilder.newBuilderWithSource(mUri)
+            .setRotationOptions(rotationOptions)
+            .setImageDecodeOptions(new ImageDecodeOptionsBuilder().setTransformToSRGB(true).build())
+            .build();
     mSimpleDraweeView.setImageRequest(imageRequest);
   }
 

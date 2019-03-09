@@ -17,7 +17,7 @@ android {
         versionName "${VERSION_NAME}"
 
         testApplicationId "com.facebook.fresco.samples.showcase.test"
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
         vectorDrawables.useSupportLibrary = true // needed for tinting
     }
@@ -27,25 +27,30 @@ android {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-showcase.pro'
         }
+        debug {
+            minifyEnabled false
+        }
+        instrumentation {
+            initWith debug
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-showcase.pro'
+            testProguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-showcase.pro', 'proguard-test.pro'
+            matchingFallbacks = ['debug']
+        }
     }
+
+    testBuildType "instrumentation"
+
 
     flavorDimensions "main"
     productFlavors {
-        main {
+        normal {
         }
         instantRunConfig {
             dimension "main"
             minSdkVersion 21
         }
-
         internal {
-            buildTypes {
-                debug {
-                    minifyEnabled true
-                    proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-showcase.pro'
-                    testProguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-showcase.pro', 'proguard-test.pro'
-                }
-            }
         }
     }
 
@@ -58,7 +63,7 @@ android {
         abi {
             enable true
             reset()
-            include 'x86', 'x86_64', 'arm64-v8a', 'armeabi-v7a', 'armeabi'
+            include 'x86', 'x86_64', 'arm64-v8a', 'armeabi-v7a'
             universalApk false
         }
     }
@@ -66,19 +71,23 @@ android {
 
 dependencies {
     compileOnly "com.google.code.findbugs:jsr305:${JSR_305_VERSION}"
-    compileOnly "com.android.support:support-annotations:${SUPPORT_LIB_VERSION}"
-    implementation "com.android.support:appcompat-v7:${SUPPORT_LIB_VERSION}"
-    implementation "com.android.support:design:${SUPPORT_LIB_VERSION}"
-    implementation "com.android.support:preference-v7:${SUPPORT_LIB_VERSION}"
-    implementation "com.android.support:recyclerview-v7:${SUPPORT_LIB_VERSION}"
-    implementation "com.android.support:cardview-v7:${SUPPORT_LIB_VERSION}"
-    implementation "com.android.support:support-v4:${SUPPORT_LIB_VERSION}"
+
+    implementation "androidx.appcompat:appcompat:${versions.androidx.appcompat}"
+    implementation "androidx.preference:preference:${versions.androidx.preference}"
+    implementation "androidx.recyclerview:recyclerview:${versions.androidx.recyclerview}"
+    implementation "androidx.cardview:cardview:1.0.0"
+    implementation "androidx.legacy:legacy-support-v4:1.0.0"
+
+    implementation "com.google.android.material:material:1.1.0-alpha03"
     implementation "com.facebook.stetho:stetho-okhttp3:${STETHO_VERSION}"
 
     implementation project(':animated-base')
     implementation project(':animated-gif')
+    implementation project(':animated-gif-lite')
     implementation project(':animated-webp')
     implementation project(':static-webp')
+    implementation project(':native-filters')
+    implementation project(':native-imagetranscoder')
 
     implementation project(':drawee-backends:drawee-pipeline')
     implementation project(':drawee-span')
@@ -92,7 +101,13 @@ dependencies {
     implementation 'com.caverock:androidsvg:1.2.1'
 
     // Testing-only dependencies
-    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
-    androidTestImplementation 'com.android.support.test:runner:1.0.1'
+    androidTestImplementation "androidx.test.espresso:espresso-core:${versions.androidx.espresso}"
+    androidTestImplementation "androidx.test:rules:${versions.androidx.test}"
+    androidTestImplementation "androidx.test:runner:${versions.androidx.test}"
     androidTestImplementation "junit:junit:${JUNIT_VERSION}"
+
+    implementation('com.facebook.flipper:flipper:0.17.0'){
+        exclude group: 'com.facebook.fresco'
+    }
+    implementation project(':tools:flipper')
 }

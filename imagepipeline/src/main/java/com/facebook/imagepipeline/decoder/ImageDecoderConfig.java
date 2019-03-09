@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -42,7 +42,7 @@ public class ImageDecoderConfig {
     private List<ImageFormat.FormatChecker> mCustomImageFormats;
 
     /**
-     * Add a new decoding cabability for a new image format.
+     * Add a new decoding capability for a new image format.
      *
      * @param imageFormat the new image format
      * @param imageFormatChecker the format checker that can determine the new image format

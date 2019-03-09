@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -28,6 +28,7 @@ import com.facebook.imagepipeline.image.EncodedImage;
 import com.facebook.imagepipeline.image.ImmutableQualityInfo;
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nullable;
 
 /**
  * Decoder for animated images.
@@ -40,7 +41,7 @@ public class AnimatedImageFactoryImpl implements AnimatedImageFactory {
   static AnimatedImageDecoder sGifAnimatedImageDecoder = null;
   static AnimatedImageDecoder sWebpAnimatedImageDecoder = null;
 
-  private static AnimatedImageDecoder loadIfPresent(final String className) {
+  private static @Nullable AnimatedImageDecoder loadIfPresent(final String className) {
     try {
       Class<?> clazz = Class.forName(className);
       return (AnimatedImageDecoder) clazz.newInstance();
@@ -80,8 +81,12 @@ public class AnimatedImageFactoryImpl implements AnimatedImageFactory {
     Preconditions.checkNotNull(bytesRef);
     try {
       final PooledByteBuffer input = bytesRef.get();
-      AnimatedImage gifImage = sGifAnimatedImageDecoder.decode(input.getNativePtr(), input.size());
-
+      AnimatedImage gifImage;
+      if (input.getByteBuffer() != null) {
+        gifImage = sGifAnimatedImageDecoder.decode(input.getByteBuffer());
+      } else {
+        gifImage = sGifAnimatedImageDecoder.decode(input.getNativePtr(), input.size());
+      }
       return getCloseableImage(options, gifImage, bitmapConfig);
     } finally {
       CloseableReference.closeSafely(bytesRef);
@@ -107,9 +112,12 @@ public class AnimatedImageFactoryImpl implements AnimatedImageFactory {
     Preconditions.checkNotNull(bytesRef);
     try {
       final PooledByteBuffer input = bytesRef.get();
-      AnimatedImage webPImage = sWebpAnimatedImageDecoder.decode(
-          input.getNativePtr(),
-          input.size());
+      AnimatedImage webPImage;
+      if (input.getByteBuffer() != null) {
+        webPImage = sWebpAnimatedImageDecoder.decode(input.getByteBuffer());
+      } else {
+        webPImage = sWebpAnimatedImageDecoder.decode(input.getNativePtr(), input.size());
+      }
       return getCloseableImage(options, webPImage, bitmapConfig);
     } finally {
       CloseableReference.closeSafely(bytesRef);
@@ -162,19 +170,20 @@ public class AnimatedImageFactoryImpl implements AnimatedImageFactory {
     AnimatedImageResult tempResult = AnimatedImageResult.forAnimatedImage(image);
     AnimatedDrawableBackend drawableBackend =
         mAnimatedDrawableBackendProvider.get(tempResult, null);
-    AnimatedImageCompositor animatedImageCompositor = new AnimatedImageCompositor(
-        drawableBackend,
-        new AnimatedImageCompositor.Callback() {
-          @Override
-          public void onIntermediateResult(int frameNumber, Bitmap bitmap) {
-            // Don't care.
-          }
+    AnimatedImageCompositor animatedImageCompositor =
+        new AnimatedImageCompositor(
+            drawableBackend,
+            new AnimatedImageCompositor.Callback() {
+              @Override
+              public void onIntermediateResult(int frameNumber, Bitmap bitmap) {
+                // Don't care.
+              }
 
-          @Override
-          public CloseableReference<Bitmap> getCachedBitmap(int frameNumber) {
-            return null;
-          }
-        });
+              @Override
+              public @Nullable CloseableReference<Bitmap> getCachedBitmap(int frameNumber) {
+                return null;
+              }
+            });
     animatedImageCompositor.renderFrame(frameForPreview, bitmap.get());
     return bitmap;
   }

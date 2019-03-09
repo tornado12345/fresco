@@ -15,9 +15,9 @@ package com.facebook.samples.zoomable;
 import android.graphics.Matrix;
 import android.graphics.PointF;
 import android.graphics.RectF;
-import android.support.annotation.IntDef;
-import android.support.annotation.Nullable;
 import android.view.MotionEvent;
+import androidx.annotation.IntDef;
+import androidx.annotation.Nullable;
 import com.facebook.common.logging.FLog;
 import com.facebook.samples.gestures.TransformGestureDetector;
 import java.lang.annotation.Retention;
@@ -28,6 +28,11 @@ import java.lang.annotation.RetentionPolicy;
  */
 public class DefaultZoomableController
     implements ZoomableController, TransformGestureDetector.Listener {
+
+  /** Interface for handling call backs when the image bounds are set. */
+  public interface ImageBoundsListener {
+    void onImageBoundsSet(RectF imageBounds);
+  }
 
   @IntDef(flag=true, value={
       LIMIT_NONE,
@@ -53,12 +58,15 @@ public class DefaultZoomableController
 
   private TransformGestureDetector mGestureDetector;
 
+  private @Nullable ImageBoundsListener mImageBoundsListener;
+
   private @Nullable Listener mListener = null;
 
   private boolean mIsEnabled = false;
   private boolean mIsRotationEnabled = false;
   private boolean mIsScaleEnabled = true;
   private boolean mIsTranslationEnabled = true;
+  private boolean mIsGestureZoomEnabled = true;
 
   private float mMinScaleFactor = 1.0f;
   private float mMaxScaleFactor = 2.0f;
@@ -172,6 +180,16 @@ public class DefaultZoomableController
     return mMaxScaleFactor;
   }
 
+  /** Sets whether gesture zooms are enabled or not. */
+  public void setGestureZoomEnabled(boolean isGestureZoomEnabled) {
+    mIsGestureZoomEnabled = isGestureZoomEnabled;
+  }
+
+  /** Gets whether gesture zooms are enabled or not. */
+  public boolean isGestureZoomEnabled() {
+    return mIsGestureZoomEnabled;
+  }
+
   /** Gets the current scale factor. */
   @Override
   public float getScaleFactor() {
@@ -184,6 +202,9 @@ public class DefaultZoomableController
     if (!imageBounds.equals(mImageBounds)) {
       mImageBounds.set(imageBounds);
       onTransformChanged();
+      if (mImageBoundsListener != null) {
+        mImageBoundsListener.onImageBoundsSet(mImageBounds);
+      }
     }
   }
 
@@ -206,6 +227,16 @@ public class DefaultZoomableController
   /** Gets the view bounds. */
   public RectF getViewBounds() {
     return mViewBounds;
+  }
+
+  /** Sets the image bounds listener. */
+  public void setImageBoundsListener(@Nullable ImageBoundsListener imageBoundsListener) {
+    mImageBoundsListener = imageBoundsListener;
+  }
+
+  /** Gets the image bounds listener. */
+  public @Nullable ImageBoundsListener getImageBoundsListener() {
+    return mImageBoundsListener;
   }
 
   /**
@@ -366,7 +397,7 @@ public class DefaultZoomableController
   @Override
   public boolean onTouchEvent(MotionEvent event) {
     FLog.v(TAG, "onTouchEvent: action: ", event.getAction());
-    if (mIsEnabled) {
+    if (mIsEnabled && mIsGestureZoomEnabled) {
       return mGestureDetector.onTouchEvent(event);
     }
     return false;

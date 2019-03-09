@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -16,6 +16,7 @@ import android.graphics.drawable.Animatable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import com.facebook.common.internal.Preconditions;
+import com.facebook.common.internal.VisibleForTesting;
 import com.facebook.drawee.drawable.DrawableParent;
 import com.facebook.drawee.drawable.FadeDrawable;
 import com.facebook.drawee.drawable.ForwardingDrawable;
@@ -23,6 +24,7 @@ import com.facebook.drawee.drawable.MatrixDrawable;
 import com.facebook.drawee.drawable.ScaleTypeDrawable;
 import com.facebook.drawee.drawable.ScalingUtils;
 import com.facebook.drawee.interfaces.SettableDraweeHierarchy;
+import com.facebook.imagepipeline.systrace.FrescoSystrace;
 import javax.annotation.Nullable;
 
 /**
@@ -98,6 +100,9 @@ public class GenericDraweeHierarchy implements SettableDraweeHierarchy {
   private final ForwardingDrawable mActualImageWrapper;
 
   GenericDraweeHierarchy(GenericDraweeHierarchyBuilder builder) {
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.beginSection("GenericDraweeHierarchy()");
+    }
     mResources = builder.getResources();
     mRoundingParams = builder.getRoundingParams();
 
@@ -112,23 +117,20 @@ public class GenericDraweeHierarchy implements SettableDraweeHierarchy {
     // array of layers
     Drawable[] layers = new Drawable[numLayers];
     layers[BACKGROUND_IMAGE_INDEX] = buildBranch(builder.getBackground(), null);
-    layers[PLACEHOLDER_IMAGE_INDEX] = buildBranch(
-        builder.getPlaceholderImage(),
-        builder.getPlaceholderImageScaleType());
-    layers[ACTUAL_IMAGE_INDEX] = buildActualImageBranch(
-        mActualImageWrapper,
-        builder.getActualImageScaleType(),
-        builder.getActualImageFocusPoint(),
-        builder.getActualImageColorFilter());
-    layers[PROGRESS_BAR_IMAGE_INDEX] = buildBranch(
-        builder.getProgressBarImage(),
-        builder.getProgressBarImageScaleType());
-    layers[RETRY_IMAGE_INDEX] = buildBranch(
-        builder.getRetryImage(),
-        builder.getRetryImageScaleType());
-    layers[FAILURE_IMAGE_INDEX] = buildBranch(
-        builder.getFailureImage(),
-        builder.getFailureImageScaleType());
+    layers[PLACEHOLDER_IMAGE_INDEX] =
+        buildBranch(builder.getPlaceholderImage(), builder.getPlaceholderImageScaleType());
+    layers[ACTUAL_IMAGE_INDEX] =
+        buildActualImageBranch(
+            mActualImageWrapper,
+            builder.getActualImageScaleType(),
+            builder.getActualImageFocusPoint(),
+            builder.getActualImageColorFilter());
+    layers[PROGRESS_BAR_IMAGE_INDEX] =
+        buildBranch(builder.getProgressBarImage(), builder.getProgressBarImageScaleType());
+    layers[RETRY_IMAGE_INDEX] =
+        buildBranch(builder.getRetryImage(), builder.getRetryImageScaleType());
+    layers[FAILURE_IMAGE_INDEX] =
+        buildBranch(builder.getFailureImage(), builder.getFailureImageScaleType());
     if (numOverlays > 0) {
       int index = 0;
       if (builder.getOverlays() != null) {
@@ -156,6 +158,9 @@ public class GenericDraweeHierarchy implements SettableDraweeHierarchy {
     mTopLevelDrawable.mutate();
 
     resetFade();
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.endSection();
+    }
   }
 
   @Nullable
@@ -577,5 +582,10 @@ public class GenericDraweeHierarchy implements SettableDraweeHierarchy {
   @Nullable
   public RoundingParams getRoundingParams() {
     return mRoundingParams;
+  }
+
+  @VisibleForTesting
+  public boolean hasImage() {
+    return mActualImageWrapper.getDrawable() != mEmptyActualImageDrawable;
   }
 }

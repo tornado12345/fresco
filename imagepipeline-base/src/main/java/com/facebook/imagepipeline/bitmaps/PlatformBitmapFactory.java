@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -71,9 +71,7 @@ public abstract class PlatformBitmapFactory {
       int height,
       Bitmap.Config bitmapConfig,
       @Nullable Object callerContext) {
-    CloseableReference<Bitmap> reference = createBitmapInternal(width, height, bitmapConfig);
-    addBitmapReference(reference.get(), callerContext);
-    return reference;
+    return createBitmapInternal(width, height, bitmapConfig);
   }
 
   /**
@@ -312,7 +310,7 @@ public abstract class PlatformBitmapFactory {
     int newWidth = width;
     int newHeight = height;
 
-    Canvas canvas = new Canvas();
+    Canvas canvas;
     CloseableReference<Bitmap> bitmapRef;
     Paint paint;
 
@@ -322,6 +320,8 @@ public abstract class PlatformBitmapFactory {
 
     if (matrix == null || matrix.isIdentity()) {
       bitmapRef = createBitmap(newWidth, newHeight, newConfig, source.hasAlpha(), callerContext);
+      setPropertyFromSourceBitmap(source, bitmapRef.get());
+      canvas = new Canvas(bitmapRef.get());
       paint = null;   // not needed
     } else {
       boolean transformed = !matrix.rectStaysRect();
@@ -338,6 +338,8 @@ public abstract class PlatformBitmapFactory {
               transformed || source.hasAlpha(),
               callerContext);
 
+      setPropertyFromSourceBitmap(source, bitmapRef.get());
+      canvas = new Canvas(bitmapRef.get());
       canvas.translate(-deviceRectangle.left, -deviceRectangle.top);
       canvas.concat(matrix);
 
@@ -348,20 +350,6 @@ public abstract class PlatformBitmapFactory {
       }
     }
 
-    // The new bitmap was created from a known bitmap source so assume that
-    // they use the same density
-    Bitmap bitmap = bitmapRef.get();
-    bitmap.setDensity(source.getDensity());
-
-    if (Build.VERSION.SDK_INT >= 12) {
-      bitmap.setHasAlpha(source.hasAlpha());
-    }
-
-    if (Build.VERSION.SDK_INT >= 19) {
-      bitmap.setPremultiplied(source.isPremultiplied());
-    }
-
-    canvas.setBitmap(bitmap);
     canvas.drawBitmap(source, srcRectangle, dstRectangle, paint);
     canvas.setBitmap(null);
 
@@ -523,7 +511,6 @@ public abstract class PlatformBitmapFactory {
       bitmap.eraseColor(0xff000000);
     }
 
-    addBitmapReference(bitmapRef.get(), callerContext);
     return bitmapRef;
   }
 
@@ -569,7 +556,6 @@ public abstract class PlatformBitmapFactory {
     CloseableReference<Bitmap> bitmapRef = createBitmapInternal(width, height, config);
     Bitmap bitmap = bitmapRef.get();
     bitmap.setPixels(colors, 0, width, 0, 0, width, height);
-    addBitmapReference(bitmapRef.get(), callerContext);
     return bitmapRef;
   }
 
@@ -756,6 +742,25 @@ public abstract class PlatformBitmapFactory {
   }
 
   /**
+   * Set some property of the source bitmap to the destination bitmap
+   *
+   * @param source the source bitmap
+   * @param destination the destination bitmap
+   */
+  private static void setPropertyFromSourceBitmap(Bitmap source, Bitmap destination) {
+    // The new bitmap was created from a known bitmap source so assume that
+    // they use the same density
+    destination.setDensity(source.getDensity());
+    if (Build.VERSION.SDK_INT >= 12) {
+      destination.setHasAlpha(source.hasAlpha());
+    }
+
+    if (Build.VERSION.SDK_INT >= 19) {
+      destination.setPremultiplied(source.isPremultiplied());
+    }
+  }
+
+  /**
    * Creates a bitmap of the specified width and height. This is intended for ImagePipeline's
    * internal use only.
    *
@@ -771,29 +776,4 @@ public abstract class PlatformBitmapFactory {
       int height,
       Bitmap.Config bitmapConfig);
 
-  private static BitmapCreationObserver sBitmapCreationObserver;
-
-  public void setCreationListener(final BitmapCreationObserver bitmapCreationObserver) {
-    if (sBitmapCreationObserver == null) {
-      sBitmapCreationObserver = bitmapCreationObserver;
-    }
-  }
-
-  public void addBitmapReference(
-      Bitmap bitmap,
-      @Nullable Object callerContext) {
-    if (sBitmapCreationObserver != null) {
-      sBitmapCreationObserver.onBitmapCreated(bitmap, callerContext);
-    }
-  }
-
-  /**
-   * Observer that notifies external creation of bitmap using
-   * {@link PlatformBitmapFactory#createBitmap(int, int)} or
-   * {@link PlatformBitmapFactory#createBitmap(int, int, Bitmap.Config)}.
-   */
-  public interface BitmapCreationObserver {
-
-    void onBitmapCreated(Bitmap bitmap, @Nullable Object callerContext);
-  }
 }

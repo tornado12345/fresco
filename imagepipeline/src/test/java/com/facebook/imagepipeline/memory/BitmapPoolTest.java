@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -31,10 +31,9 @@ import org.mockito.stubbing.Answer;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.robolectric.RobolectricTestRunner;
 
-/**
- Basic tests for BitmapPool */
+/** Basic tests for BitmapPool */
 @RunWith(RobolectricTestRunner.class)
-@PowerMockIgnore({"org.mockito.*", "org.robolectric.*", "android.*"})
+@PowerMockIgnore({"org.mockito.*", "org.robolectric.*", "androidx.*", "android.*"})
 @org.robolectric.annotation.Config(manifest = org.robolectric.annotation.Config.NONE)
 public class BitmapPoolTest {
 
@@ -43,7 +42,7 @@ public class BitmapPoolTest {
   }
 
   @Mock(answer = Answers.CALLS_REAL_METHODS)
-  public BitmapPool mPool;
+  public BucketsBitmapPool mPool;
 
   @Before
   public void setup() {

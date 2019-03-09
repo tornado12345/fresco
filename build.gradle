@@ -4,6 +4,21 @@ import org.apache.tools.ant.taskdefs.condition.Os
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
+
+    ext.versions = [
+            'androidx' : [
+                'annotation' : '1.0.2',
+                'appcompat'  : '1.0.2',
+                'espresso' : '3.1.1',
+                'legacy_support_core_ui' : '1.0.0',
+                'legacy_support_core_utils' : '1.0.0',
+                'preference' : '1.0.0',
+                'recyclerview' : '1.0.0',
+                'test' : '1.1.1',
+            ],
+            'material' : '1.0.0',
+    ]
+
     repositories {
         google()
         jcenter()
@@ -36,6 +51,10 @@ subprojects {
     repositories {
         google()
         jcenter()
+    }
+
+    configurations.all {
+        resolutionStrategy.force "com.google.code.findbugs:jsr305:${JSR_305_VERSION}"
     }
 
     task allclean {
@@ -71,7 +90,7 @@ subprojects {
 
     ext.makeNdkTasks = { name, deps ->
         task "ndk_build_${name}"(dependsOn: deps, type: Exec) {
-            inputs.file("src/main/jni/${name}")
+            inputs.files("src/main/jni/${name}")
             outputs.dir("$buildDir/${name}")
             commandLine getNdkBuildFullPath(project),
                     'NDK_PROJECT_PATH=null',

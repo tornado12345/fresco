@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -9,15 +9,14 @@ package com.facebook.imagepipeline.cache;
 
 import android.graphics.Bitmap;
 import android.os.SystemClock;
-import com.android.internal.util.Predicate;
 import com.facebook.common.internal.Preconditions;
+import com.facebook.common.internal.Predicate;
 import com.facebook.common.internal.Supplier;
 import com.facebook.common.internal.VisibleForTesting;
 import com.facebook.common.memory.MemoryTrimType;
 import com.facebook.common.memory.MemoryTrimmable;
 import com.facebook.common.references.CloseableReference;
 import com.facebook.common.references.ResourceReleaser;
-import com.facebook.imagepipeline.bitmaps.PlatformBitmapFactory;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -126,9 +125,7 @@ public class CountingMemoryCache<K, V> implements MemoryCache<K, V>, MemoryTrimm
   public CountingMemoryCache(
       ValueDescriptor<V> valueDescriptor,
       CacheTrimStrategy cacheTrimStrategy,
-      Supplier<MemoryCacheParams> memoryCacheParamsSupplier,
-      PlatformBitmapFactory platformBitmapFactory,
-      boolean isExternalCreatedBitmapLogEnabled) {
+      Supplier<MemoryCacheParams> memoryCacheParamsSupplier) {
     mValueDescriptor = valueDescriptor;
     mExclusiveEntries = new CountingLruMap<>(wrapValueDescriptor(valueDescriptor));
     mCachedEntries = new CountingLruMap<>(wrapValueDescriptor(valueDescriptor));
@@ -136,18 +133,6 @@ public class CountingMemoryCache<K, V> implements MemoryCache<K, V>, MemoryTrimm
     mMemoryCacheParamsSupplier = memoryCacheParamsSupplier;
     mMemoryCacheParams = mMemoryCacheParamsSupplier.get();
     mLastCacheParamsCheck = SystemClock.uptimeMillis();
-
-    if (isExternalCreatedBitmapLogEnabled) {
-      platformBitmapFactory.setCreationListener(
-          new PlatformBitmapFactory.BitmapCreationObserver() {
-            @Override
-            public void onBitmapCreated(
-                Bitmap bitmap,
-                Object callerContext) {
-              mOtherEntries.put(bitmap, callerContext);
-            }
-          });
-    }
   }
 
   private ValueDescriptor<Entry<K, V>> wrapValueDescriptor(
@@ -175,15 +160,13 @@ public class CountingMemoryCache<K, V> implements MemoryCache<K, V>, MemoryTrimm
   /**
    * Caches the given key-value pair.
    *
-   * <p> Important: the client should use the returned reference instead of the original one.
-   * It is the caller's responsibility to close the returned reference once not needed anymore.
+   * <p>Important: the client should use the returned reference instead of the original one. It is
+   * the caller's responsibility to close the returned reference once not needed anymore.
    *
    * @return the new reference to be used, null if the value cannot be cached
    */
-  public CloseableReference<V> cache(
-      final K key,
-      final CloseableReference<V> valueRef,
-      final EntryStateObserver<K> observer) {
+  public @Nullable CloseableReference<V> cache(
+      final K key, final CloseableReference<V> valueRef, final EntryStateObserver<K> observer) {
     Preconditions.checkNotNull(key);
     Preconditions.checkNotNull(valueRef);
 
@@ -364,6 +347,7 @@ public class CountingMemoryCache<K, V> implements MemoryCache<K, V>, MemoryTrimm
    * @param key returns true if an item with the given key matches
    * @return true is any items matches from the cache
    */
+  @Override
   public synchronized boolean contains(K key) {
     return mCachedEntries.contains(key);
   }

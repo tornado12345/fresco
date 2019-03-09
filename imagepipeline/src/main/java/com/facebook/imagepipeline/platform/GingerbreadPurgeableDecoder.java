@@ -1,13 +1,11 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
 
 package com.facebook.imagepipeline.platform;
-
-import static com.facebook.common.webp.WebpSupportStatus.sWebpBitmapFactory;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -20,6 +18,9 @@ import com.facebook.common.memory.PooledByteBuffer;
 import com.facebook.common.memory.PooledByteBufferInputStream;
 import com.facebook.common.references.CloseableReference;
 import com.facebook.common.streams.LimitedInputStream;
+import com.facebook.common.webp.WebpBitmapFactory;
+import com.facebook.common.webp.WebpSupportStatus;
+import com.facebook.imagepipeline.nativecode.DalvikPurgeableDecoder;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -37,35 +38,39 @@ public class GingerbreadPurgeableDecoder extends DalvikPurgeableDecoder {
 
   private static Method sGetFileDescriptorMethod;
 
+  private final @Nullable WebpBitmapFactory mWebpBitmapFactory;
+
+  public GingerbreadPurgeableDecoder() {
+    super();
+    mWebpBitmapFactory = WebpSupportStatus.loadWebpBitmapFactoryIfExists();
+  }
+
   /**
    * Decodes a byteArray into a purgeable bitmap
    *
    * @param bytesRef the byte buffer that contains the encoded bytes
    * @param options the options passed to the BitmapFactory
-   * @return
+   * @return the decoded bitmap
    */
   @Override
   protected Bitmap decodeByteArrayAsPurgeable(
-      CloseableReference<PooledByteBuffer> bytesRef,
-      BitmapFactory.Options options) {
+      CloseableReference<PooledByteBuffer> bytesRef, BitmapFactory.Options options) {
     return decodeFileDescriptorAsPurgeable(bytesRef, bytesRef.get().size(), null, options);
   }
 
   /**
    * Decodes a byteArray containing jpeg encoded bytes into a purgeable bitmap
-   * <p/>
-   * <p> Adds a JFIF End-Of-Image marker if needed before decoding.
+   *
+   * <p>Adds a JFIF End-Of-Image marker if needed before decoding.
    *
    * @param bytesRef the byte buffer that contains the encoded bytes
    * @param length the length of bytes for decox
    * @param options the options passed to the BitmapFactory
-   * @return
+   * @return the decoded bitmap
    */
   @Override
   protected Bitmap decodeJPEGByteArrayAsPurgeable(
-      CloseableReference<PooledByteBuffer> bytesRef,
-      int length,
-      BitmapFactory.Options options) {
+      CloseableReference<PooledByteBuffer> bytesRef, int length, BitmapFactory.Options options) {
     byte[] suffix = endsWithEOI(bytesRef, length) ? null : EOI;
     return decodeFileDescriptorAsPurgeable(bytesRef, length, suffix, options);
   }
@@ -117,7 +122,7 @@ public class GingerbreadPurgeableDecoder extends DalvikPurgeableDecoder {
     }
   }
 
-  protected Bitmap decodeFileDescriptorAsPurgeable(
+  private Bitmap decodeFileDescriptorAsPurgeable(
       CloseableReference<PooledByteBuffer> bytesRef,
       int inputLength,
       byte[] suffix,
@@ -126,8 +131,12 @@ public class GingerbreadPurgeableDecoder extends DalvikPurgeableDecoder {
     try {
       memoryFile = copyToMemoryFile(bytesRef, inputLength, suffix);
       FileDescriptor fd = getMemoryFileDescriptor(memoryFile);
-      Bitmap bitmap = sWebpBitmapFactory.decodeFileDescriptor(fd, null, options);
-      return Preconditions.checkNotNull(bitmap, "BitmapFactory returned null");
+      if (mWebpBitmapFactory != null) {
+        Bitmap bitmap = mWebpBitmapFactory.decodeFileDescriptor(fd, null, options);
+        return Preconditions.checkNotNull(bitmap, "BitmapFactory returned null");
+      } else {
+        throw new IllegalStateException("WebpBitmapFactory is null");
+      }
     } catch (IOException e) {
       throw Throwables.propagate(e);
     } finally {

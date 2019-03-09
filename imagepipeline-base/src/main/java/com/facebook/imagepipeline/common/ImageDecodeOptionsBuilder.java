@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -9,6 +9,7 @@ package com.facebook.imagepipeline.common;
 
 import android.graphics.Bitmap;
 import com.facebook.imagepipeline.decoder.ImageDecoder;
+import com.facebook.imagepipeline.transformation.BitmapTransformation;
 import javax.annotation.Nullable;
 
 /**
@@ -21,8 +22,10 @@ public class ImageDecodeOptionsBuilder {
   private boolean mUseLastFrameForPreview;
   private boolean mDecodeAllFrames;
   private boolean mForceStaticImage;
+  private boolean mTransformToSRGB;
   private Bitmap.Config mBitmapConfig = Bitmap.Config.ARGB_8888;
   private @Nullable ImageDecoder mCustomImageDecoder;
+  private @Nullable BitmapTransformation mBitmapTransformation;
 
   public ImageDecodeOptionsBuilder() {
   }
@@ -40,6 +43,8 @@ public class ImageDecodeOptionsBuilder {
     mForceStaticImage = options.forceStaticImage;
     mBitmapConfig = options.bitmapConfig;
     mCustomImageDecoder = options.customImageDecoder;
+    mTransformToSRGB = options.transformToSRGB;
+    mBitmapTransformation = options.bitmapTransformation;
     return this;
   }
 
@@ -190,6 +195,43 @@ public class ImageDecodeOptionsBuilder {
   public ImageDecodeOptionsBuilder setBitmapConfig(Bitmap.Config bitmapConfig) {
     mBitmapConfig = bitmapConfig;
     return this;
+  }
+
+  /**
+   * Gets whether to allow or not an image color space to be transformed into sRGB.
+   *
+   * @return whether to allow the color space to be transformed into sRGB.
+   */
+  public boolean getTransformToSRGB() {
+    return mTransformToSRGB;
+  }
+
+  /**
+   * Sets whether to allow or not the color space transformation of the image.
+   *
+   * @param transformToSRGB whether to allow the color space to be transformed to sRGB
+   * @return this builder
+   */
+  public ImageDecodeOptionsBuilder setTransformToSRGB(boolean transformToSRGB) {
+    mTransformToSRGB = transformToSRGB;
+    return this;
+  }
+
+  /**
+   * Set a custom in-place bitmap transformation that is applied immediately after decoding.
+   *
+   * @param bitmapTransformation the transformation to use
+   * @return the builder
+   */
+  public ImageDecodeOptionsBuilder setBitmapTransformation(
+      @Nullable BitmapTransformation bitmapTransformation) {
+    mBitmapTransformation = bitmapTransformation;
+    return this;
+  }
+
+  @Nullable
+  public BitmapTransformation getBitmapTransformation() {
+    return mBitmapTransformation;
   }
 
   /**

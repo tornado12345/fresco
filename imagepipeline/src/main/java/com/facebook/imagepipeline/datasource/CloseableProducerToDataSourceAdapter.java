@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -12,6 +12,7 @@ import com.facebook.datasource.DataSource;
 import com.facebook.imagepipeline.listener.RequestListener;
 import com.facebook.imagepipeline.producers.Producer;
 import com.facebook.imagepipeline.producers.SettableProducerContext;
+import com.facebook.imagepipeline.systrace.FrescoSystrace;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
@@ -28,8 +29,15 @@ public class CloseableProducerToDataSourceAdapter<T>
       Producer<CloseableReference<T>> producer,
       SettableProducerContext settableProducerContext,
       RequestListener listener) {
-    return new CloseableProducerToDataSourceAdapter<T>(
-        producer, settableProducerContext, listener);
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.beginSection("CloseableProducerToDataSourceAdapter#create");
+    }
+    CloseableProducerToDataSourceAdapter<T> result =
+        new CloseableProducerToDataSourceAdapter<T>(producer, settableProducerContext, listener);
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.endSection();
+    }
+    return result;
   }
 
   private CloseableProducerToDataSourceAdapter(

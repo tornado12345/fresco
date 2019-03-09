@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -107,10 +107,9 @@ public abstract class BasePostprocessor implements Postprocessor {
   }
 
   /**
-   * Copies the content of <code>sourceBitmap</code> to <code>destBitmap</code>. Both bitmaps must
-   * have the same width and height. If their {@link Bitmap.Config} are identical, the memory is
-   * directly copied. Otherwise, the <code>sourceBitmap</code> is drawn into
-   * <code>destBitmap</code>.
+   * Copies the content of {@code sourceBitmap} to {@code destBitmap}. Both bitmaps must have the
+   * same width and height. If their {@link Bitmap.Config} are identical, the memory is directly
+   * copied. Otherwise, the {@code sourceBitmap} is drawn into {@code destBitmap}.
    */
   private static void internalCopyBitmap(Bitmap destBitmap, Bitmap sourceBitmap) {
     if (destBitmap.getConfig() == sourceBitmap.getConfig()) {

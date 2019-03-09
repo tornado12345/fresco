@@ -13,17 +13,23 @@ package com.facebook.fresco.samples.showcase;
 
 import android.app.Application;
 import android.content.Context;
-import com.facebook.common.internal.Supplier;
-import com.facebook.common.internal.Suppliers;
 import com.facebook.common.logging.FLog;
 import com.facebook.drawee.backends.pipeline.DraweeConfig;
 import com.facebook.drawee.backends.pipeline.Fresco;
+import com.facebook.flipper.android.AndroidFlipperClient;
+import com.facebook.flipper.android.utils.FlipperUtils;
+import com.facebook.flipper.core.FlipperClient;
+import com.facebook.flipper.plugins.fresco.FrescoFlipperPlugin;
+import com.facebook.flipper.plugins.inspector.DescriptorMapping;
+import com.facebook.flipper.plugins.inspector.InspectorFlipperPlugin;
 import com.facebook.fresco.samples.showcase.misc.DebugOverlaySupplierSingleton;
 import com.facebook.imagepipeline.backends.okhttp3.OkHttpImagePipelineConfigFactory;
 import com.facebook.imagepipeline.core.ImagePipelineConfig;
 import com.facebook.imagepipeline.decoder.SimpleProgressiveJpegConfig;
 import com.facebook.imagepipeline.listener.RequestListener;
 import com.facebook.imagepipeline.listener.RequestLoggingListener;
+import com.facebook.imagepipeline.memory.BitmapCounterConfig;
+import com.facebook.imagepipeline.memory.BitmapCounterProvider;
 import com.facebook.imagepipeline.stetho.FrescoStethoPlugin;
 import com.facebook.stetho.DumperPluginsProvider;
 import com.facebook.stetho.Stetho;
@@ -55,17 +61,7 @@ public class ShowcaseApplication extends Application {
             .setProgressiveJpegConfig(new SimpleProgressiveJpegConfig())
             .setImageDecoderConfig(CustomImageFormatConfigurator.createImageDecoderConfig(this))
             .experiment()
-            .setMediaVariationsIndexEnabled(
-                new Supplier<Boolean>() {
-                  @Override
-                  public Boolean get() {
-                    return true;
-                  }
-                })
-            .experiment()
             .setBitmapPrepareToDraw(true, 0, Integer.MAX_VALUE, true)
-            .experiment()
-            .setSmartResizingEnabled(Suppliers.BOOLEAN_TRUE)
             .build();
 
     ImagePipelineConfig.getDefaultImageRequestConfig().setProgressiveRenderingEnabled(true);
@@ -76,6 +72,10 @@ public class ShowcaseApplication extends Application {
     draweeConfigBuilder.setDebugOverlayEnabledSupplier(
         DebugOverlaySupplierSingleton.getInstance(getApplicationContext()));
 
+    BitmapCounterProvider.initialize(
+        BitmapCounterConfig.newBuilder()
+            .setMaxBitmapCount(BitmapCounterConfig.DEFAULT_MAX_BITMAP_COUNT)
+            .build());
     Fresco.initialize(this, imagePipelineConfig, draweeConfigBuilder.build());
 
     final Context context = this;
@@ -92,5 +92,12 @@ public class ShowcaseApplication extends Application {
                 })
             .enableWebKitInspector(Stetho.defaultInspectorModulesProvider(context))
             .build());
+
+    if (BuildConfig.DEBUG && FlipperUtils.shouldEnableFlipper(this)) {
+      final FlipperClient client = AndroidFlipperClient.getInstance(this);
+      client.addPlugin(new InspectorFlipperPlugin(this, DescriptorMapping.withDefaults()));
+      client.addPlugin(new FrescoFlipperPlugin());
+      client.start();
+    }
   }
 }

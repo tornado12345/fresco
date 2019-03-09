@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -15,7 +15,7 @@ import com.facebook.common.internal.Preconditions;
 import com.facebook.common.references.CloseableReference;
 import com.facebook.datasource.DataSource;
 import com.facebook.drawee.backends.pipeline.info.ImageOriginListener;
-import com.facebook.drawee.backends.pipeline.info.ImageOriginRequestListener;
+import com.facebook.drawee.backends.pipeline.info.ImagePerfDataListener;
 import com.facebook.drawee.controller.AbstractDraweeControllerBuilder;
 import com.facebook.drawee.controller.ControllerListener;
 import com.facebook.drawee.interfaces.DraweeController;
@@ -28,6 +28,7 @@ import com.facebook.imagepipeline.image.ImageInfo;
 import com.facebook.imagepipeline.listener.RequestListener;
 import com.facebook.imagepipeline.request.ImageRequest;
 import com.facebook.imagepipeline.request.ImageRequestBuilder;
+import com.facebook.imagepipeline.systrace.FrescoSystrace;
 import java.util.Set;
 import javax.annotation.Nullable;
 
@@ -47,6 +48,7 @@ public class PipelineDraweeControllerBuilder extends AbstractDraweeControllerBui
   @Nullable
   private ImmutableList<DrawableFactory> mCustomDrawableFactories;
   @Nullable private ImageOriginListener mImageOriginListener;
+  @Nullable private ImagePerfDataListener mImagePerfDataListener;
 
   public PipelineDraweeControllerBuilder(
       Context context,
@@ -100,27 +102,43 @@ public class PipelineDraweeControllerBuilder extends AbstractDraweeControllerBui
     return getThis();
   }
 
-  @Override
-  protected PipelineDraweeController obtainController() {
-    DraweeController oldController = getOldController();
-    PipelineDraweeController controller;
-    final String controllerId = generateUniqueControllerId();
-    if (oldController instanceof PipelineDraweeController) {
-      controller = (PipelineDraweeController) oldController;
-    } else {
-      controller = mPipelineDraweeControllerFactory.newController();
-    }
-    controller.initialize(
-        obtainDataSourceSupplier(controller, controllerId),
-        controllerId,
-        getCacheKey(),
-        getCallerContext(),
-        mCustomDrawableFactories,
-        mImageOriginListener);
-    return controller;
+  public PipelineDraweeControllerBuilder setPerfDataListener(
+      @Nullable ImagePerfDataListener imagePerfDataListener) {
+    mImagePerfDataListener = imagePerfDataListener;
+    return getThis();
   }
 
-  private CacheKey getCacheKey() {
+  @Override
+  protected PipelineDraweeController obtainController() {
+    if (FrescoSystrace.isTracing()) {
+      FrescoSystrace.beginSection("PipelineDraweeControllerBuilder#obtainController");
+    }
+    try {
+      DraweeController oldController = getOldController();
+      PipelineDraweeController controller;
+      final String controllerId = generateUniqueControllerId();
+      if (oldController instanceof PipelineDraweeController) {
+        controller = (PipelineDraweeController) oldController;
+      } else {
+        controller = mPipelineDraweeControllerFactory.newController();
+      }
+      controller.initialize(
+          obtainDataSourceSupplier(controller, controllerId),
+          controllerId,
+          getCacheKey(),
+          getCallerContext(),
+          mCustomDrawableFactories,
+          mImageOriginListener);
+      controller.initializePerformanceMonitoring(mImagePerfDataListener);
+      return controller;
+    } finally {
+      if (FrescoSystrace.isTracing()) {
+        FrescoSystrace.endSection();
+      }
+    }
+  }
+
+  private @Nullable CacheKey getCacheKey() {
     final ImageRequest imageRequest = getImageRequest();
     final CacheKeyFactory cacheKeyFactory = mImagePipeline.getCacheKeyFactory();
     CacheKey cacheKey = null;
@@ -149,15 +167,15 @@ public class PipelineDraweeControllerBuilder extends AbstractDraweeControllerBui
         imageRequest,
         callerContext,
         convertCacheLevelToRequestLevel(cacheLevel),
-        createRequestListener(controllerId));
+        getRequestListener(controller));
   }
 
   @Nullable
-  protected RequestListener createRequestListener(String controllerId) {
-    if (mImageOriginListener == null) {
-      return null;
+  protected RequestListener getRequestListener(final DraweeController controller) {
+    if (controller instanceof PipelineDraweeController) {
+      return ((PipelineDraweeController) controller).getRequestListener();
     }
-    return new ImageOriginRequestListener(controllerId, mImageOriginListener);
+    return null;
   }
 
   public static ImageRequest.RequestLevel convertCacheLevelToRequestLevel(
