@@ -1,19 +1,20 @@
 /*
  * Copyright (c) Facebook, Inc. and its affiliates.
- * All rights reserved.
  *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree. An additional grant
- * of patent rights can be found in the PATENTS file in the same directory.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
  */
+
 package com.facebook.imagepipeline.memory;
 
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import com.facebook.common.logging.FLog;
 import com.facebook.imageutils.BitmapUtil;
+import com.facebook.infer.annotation.Nullsafe;
 import javax.annotation.Nullable;
 
+@Nullsafe(Nullsafe.Mode.STRICT)
 public class BitmapPoolBackend extends LruBucketsPoolBackend<Bitmap> {
 
   private static final String TAG = "BitmapPoolBackend";

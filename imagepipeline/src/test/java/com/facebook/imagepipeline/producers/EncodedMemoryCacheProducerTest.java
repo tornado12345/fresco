@@ -7,7 +7,7 @@
 
 package com.facebook.imagepipeline.producers;
 
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.any;
 
@@ -20,6 +20,8 @@ import com.facebook.common.references.CloseableReference;
 import com.facebook.imageformat.ImageFormat;
 import com.facebook.imagepipeline.cache.CacheKeyFactory;
 import com.facebook.imagepipeline.cache.MemoryCache;
+import com.facebook.imagepipeline.core.ImagePipelineConfig;
+import com.facebook.imagepipeline.core.ImagePipelineExperiments;
 import com.facebook.imagepipeline.image.EncodedImage;
 import com.facebook.imagepipeline.request.ImageRequest;
 import java.util.ArrayList;
@@ -36,15 +38,14 @@ import org.robolectric.*;
 import org.robolectric.annotation.*;
 
 /**
- * Checks basic properties of encoded memory cache producer operation, that is:
- *   - it delegates to the {@link MemoryCache#get(Object)}
- *   - if {@link MemoryCache#get(Object)} is unsuccessful, then it passes the
- *   request to the next producer in the sequence.
- *   - if the next producer returns the value, then it is put into the disk cache.
- *   - responses from the next producer are passed back down to the consumer.
+ * Checks basic properties of encoded memory cache producer operation, that is: - it delegates to
+ * the {@link MemoryCache#get(Object)} - if {@link MemoryCache#get(Object)} is unsuccessful, then it
+ * passes the request to the next producer in the sequence. - if the next producer returns the
+ * value, then it is put into the disk cache. - responses from the next producer are passed back
+ * down to the consumer.
  */
 @RunWith(RobolectricTestRunner.class)
-@Config(manifest= Config.NONE)
+@Config(manifest = Config.NONE)
 public class EncodedMemoryCacheProducerTest {
   private static final String PRODUCER_NAME = EncodedMemoryCacheProducer.PRODUCER_NAME;
   @Mock public MemoryCache<CacheKey, PooledByteBuffer> mMemoryCache;
@@ -54,7 +55,7 @@ public class EncodedMemoryCacheProducerTest {
   @Mock public ProducerContext mProducerContext;
   @Mock public ImageRequest mImageRequest;
   @Mock public Object mCallerContext;
-  @Mock public ProducerListener mProducerListener;
+  @Mock public ProducerListener2 mProducerListener;
   @Mock public Exception mException;
   private MultiCacheKey mCacheKey;
   private PooledByteBuffer mPooledByteBuffer1;
@@ -67,7 +68,8 @@ public class EncodedMemoryCacheProducerTest {
   private EncodedImage mIntermediateEncodedImage;
   private EncodedImage mFinalEncodedImageClone;
   private EncodedMemoryCacheProducer mEncodedMemoryCacheProducer;
-  private final String mRequestId = "mRequestId";
+  private ImagePipelineConfig mImagePipelineConfig;
+  private ImagePipelineExperiments mImagePipelineExperiments;
 
   @Before
   public void setUp() {
@@ -83,6 +85,8 @@ public class EncodedMemoryCacheProducerTest {
     mFinalEncodedImage.setImageFormat(new ImageFormat("jpeg", null));
     mFinalEncodedImage.setWidth(100);
     mFinalEncodedImage.setHeight(100);
+    mImagePipelineConfig = mock(ImagePipelineConfig.class);
+    mImagePipelineExperiments = mock(ImagePipelineExperiments.class);
 
     mFinalEncodedImageFormatUnknown = new EncodedImage(mFinalImageReference);
     mIntermediateEncodedImage = new EncodedImage(mIntermediateImageReference);
@@ -95,11 +99,13 @@ public class EncodedMemoryCacheProducerTest {
     when(mMemoryCache.cache(mCacheKey, mFinalImageReference)).thenReturn(mFinalImageReferenceClone);
     when(mProducerContext.getImageRequest()).thenReturn(mImageRequest);
     when(mProducerContext.getCallerContext()).thenReturn(mCallerContext);
-    when(mProducerContext.getListener()).thenReturn(mProducerListener);
-    when(mProducerListener.requiresExtraMap(mRequestId)).thenReturn(true);
-    when(mProducerContext.getId()).thenReturn(mRequestId);
+    when(mProducerContext.getProducerListener()).thenReturn(mProducerListener);
+    when(mProducerListener.requiresExtraMap(mProducerContext, PRODUCER_NAME)).thenReturn(true);
     when(mProducerContext.getLowestPermittedRequestLevel())
         .thenReturn(ImageRequest.RequestLevel.FULL_FETCH);
+    when(mProducerContext.getImagePipelineConfig()).thenReturn(mImagePipelineConfig);
+    when(mImagePipelineConfig.getExperiments()).thenReturn(mImagePipelineExperiments);
+    when(mImagePipelineExperiments.isEncodedCacheEnabled()).thenReturn(true);
 
     when(mImageRequest.isMemoryCacheEnabled()).thenReturn(true);
   }
@@ -125,11 +131,12 @@ public class EncodedMemoryCacheProducerTest {
     Assert.assertSame(
         mFinalEncodedImage.getUnderlyingReferenceTestOnly(),
         encodedImage.getUnderlyingReferenceTestOnly());
-    verify(mProducerListener).onProducerStart(mRequestId, PRODUCER_NAME);
+    verify(mProducerListener).onProducerStart(mProducerContext, PRODUCER_NAME);
     Map<String, String> extraMap =
         ImmutableMap.of(EncodedMemoryCacheProducer.EXTRA_CACHED_VALUE_FOUND, "true");
-    verify(mProducerListener).onProducerFinishWithSuccess(mRequestId, PRODUCER_NAME, extraMap);
-    verify(mProducerListener).onUltimateProducerReached(mRequestId, PRODUCER_NAME, true);
+    verify(mProducerListener)
+        .onProducerFinishWithSuccess(mProducerContext, PRODUCER_NAME, extraMap);
+    verify(mProducerListener).onUltimateProducerReached(mProducerContext, PRODUCER_NAME, true);
     Assert.assertFalse(mFinalImageReference.isValid());
   }
 
@@ -150,12 +157,13 @@ public class EncodedMemoryCacheProducerTest {
     verify(mConsumer).onNewResult(mIntermediateEncodedImage, Consumer.NO_FLAGS);
     verify(mConsumer).onNewResult(mFinalEncodedImage, Consumer.IS_LAST);
     Assert.assertTrue(EncodedImage.isValid(mFinalEncodedImageClone));
-    verify(mProducerListener).onProducerStart(mRequestId, PRODUCER_NAME);
+    verify(mProducerListener).onProducerStart(mProducerContext, PRODUCER_NAME);
     Map<String, String> extraMap =
         ImmutableMap.of(EncodedMemoryCacheProducer.EXTRA_CACHED_VALUE_FOUND, "false");
-    verify(mProducerListener).onProducerFinishWithSuccess(mRequestId, PRODUCER_NAME, extraMap);
+    verify(mProducerListener)
+        .onProducerFinishWithSuccess(mProducerContext, PRODUCER_NAME, extraMap);
     verify(mProducerListener, never())
-        .onUltimateProducerReached(anyString(), anyString(), anyBoolean());
+        .onUltimateProducerReached(eq(mProducerContext), anyString(), anyBoolean());
   }
 
   @Test
@@ -177,12 +185,13 @@ public class EncodedMemoryCacheProducerTest {
     verify(mConsumer).onNewResult(mIntermediateEncodedImage, Consumer.NO_FLAGS);
     verify(mConsumer).onNewResult(mFinalEncodedImageFormatUnknown, Consumer.IS_LAST);
     Assert.assertTrue(EncodedImage.isValid(mFinalEncodedImageClone));
-    verify(mProducerListener).onProducerStart(mRequestId, PRODUCER_NAME);
+    verify(mProducerListener).onProducerStart(mProducerContext, PRODUCER_NAME);
     Map<String, String> extraMap =
         ImmutableMap.of(EncodedMemoryCacheProducer.EXTRA_CACHED_VALUE_FOUND, "false");
-    verify(mProducerListener).onProducerFinishWithSuccess(mRequestId, PRODUCER_NAME, extraMap);
+    verify(mProducerListener)
+        .onProducerFinishWithSuccess(mProducerContext, PRODUCER_NAME, extraMap);
     verify(mProducerListener, never())
-        .onUltimateProducerReached(anyString(), anyString(), anyBoolean());
+        .onUltimateProducerReached(eq(mProducerContext), anyString(), anyBoolean());
   }
 
   private void testInputProducerSuccessButResultNotCacheableDueToStatusFlags(
@@ -191,16 +200,16 @@ public class EncodedMemoryCacheProducerTest {
     mEncodedMemoryCacheProducer.produceResults(mConsumer, mProducerContext);
 
     verify(mMemoryCache, never()).cache(any(CacheKey.class), any(CloseableReference.class));
-    verify(mConsumer)
-        .onNewResult(mIntermediateEncodedImage, statusFlags);
+    verify(mConsumer).onNewResult(mIntermediateEncodedImage, statusFlags);
     verify(mConsumer).onNewResult(mFinalEncodedImageFormatUnknown, Consumer.IS_LAST | statusFlags);
     Assert.assertTrue(EncodedImage.isValid(mFinalEncodedImageClone));
-    verify(mProducerListener).onProducerStart(mRequestId, PRODUCER_NAME);
+    verify(mProducerListener).onProducerStart(mProducerContext, PRODUCER_NAME);
     Map<String, String> extraMap =
         ImmutableMap.of(EncodedMemoryCacheProducer.EXTRA_CACHED_VALUE_FOUND, "false");
-    verify(mProducerListener).onProducerFinishWithSuccess(mRequestId, PRODUCER_NAME, extraMap);
+    verify(mProducerListener)
+        .onProducerFinishWithSuccess(mProducerContext, PRODUCER_NAME, extraMap);
     verify(mProducerListener, never())
-        .onUltimateProducerReached(anyString(), anyString(), anyBoolean());
+        .onUltimateProducerReached(eq(mProducerContext), anyString(), anyBoolean());
   }
 
   @Test
@@ -209,12 +218,13 @@ public class EncodedMemoryCacheProducerTest {
     setupInputProducerNotFound();
     mEncodedMemoryCacheProducer.produceResults(mConsumer, mProducerContext);
     verify(mConsumer).onNewResult(null, Consumer.IS_LAST);
-    verify(mProducerListener).onProducerStart(mRequestId, PRODUCER_NAME);
+    verify(mProducerListener).onProducerStart(mProducerContext, PRODUCER_NAME);
     Map<String, String> extraMap =
         ImmutableMap.of(EncodedMemoryCacheProducer.EXTRA_CACHED_VALUE_FOUND, "false");
-    verify(mProducerListener).onProducerFinishWithSuccess(mRequestId, PRODUCER_NAME, extraMap);
+    verify(mProducerListener)
+        .onProducerFinishWithSuccess(mProducerContext, PRODUCER_NAME, extraMap);
     verify(mProducerListener, never())
-        .onUltimateProducerReached(anyString(), anyString(), anyBoolean());
+        .onUltimateProducerReached(eq(mProducerContext), anyString(), anyBoolean());
   }
 
   @Test
@@ -223,12 +233,13 @@ public class EncodedMemoryCacheProducerTest {
     setupInputProducerFailure();
     mEncodedMemoryCacheProducer.produceResults(mConsumer, mProducerContext);
     verify(mConsumer).onFailure(mException);
-    verify(mProducerListener).onProducerStart(mRequestId, PRODUCER_NAME);
+    verify(mProducerListener).onProducerStart(mProducerContext, PRODUCER_NAME);
     Map<String, String> extraMap =
         ImmutableMap.of(EncodedMemoryCacheProducer.EXTRA_CACHED_VALUE_FOUND, "false");
-    verify(mProducerListener).onProducerFinishWithSuccess(mRequestId, PRODUCER_NAME, extraMap);
+    verify(mProducerListener)
+        .onProducerFinishWithSuccess(mProducerContext, PRODUCER_NAME, extraMap);
     verify(mProducerListener, never())
-        .onUltimateProducerReached(anyString(), anyString(), anyBoolean());
+        .onUltimateProducerReached(eq(mProducerContext), anyString(), anyBoolean());
   }
 
   @Test
@@ -238,11 +249,12 @@ public class EncodedMemoryCacheProducerTest {
         .thenReturn(ImageRequest.RequestLevel.ENCODED_MEMORY_CACHE);
     mEncodedMemoryCacheProducer.produceResults(mConsumer, mProducerContext);
     verify(mConsumer).onNewResult(null, Consumer.IS_LAST);
-    verify(mProducerListener).onProducerStart(mRequestId, PRODUCER_NAME);
+    verify(mProducerListener).onProducerStart(mProducerContext, PRODUCER_NAME);
     Map<String, String> extraMap =
         ImmutableMap.of(EncodedMemoryCacheProducer.EXTRA_CACHED_VALUE_FOUND, "false");
-    verify(mProducerListener).onProducerFinishWithSuccess(mRequestId, PRODUCER_NAME, extraMap);
-    verify(mProducerListener).onUltimateProducerReached(mRequestId, PRODUCER_NAME, false);
+    verify(mProducerListener)
+        .onProducerFinishWithSuccess(mProducerContext, PRODUCER_NAME, extraMap);
+    verify(mProducerListener).onUltimateProducerReached(mProducerContext, PRODUCER_NAME, false);
     verifyNoMoreInteractions(mInputProducer);
   }
 
@@ -275,12 +287,14 @@ public class EncodedMemoryCacheProducerTest {
     final List<EncodedImage> nullArray = new ArrayList<EncodedImage>(1);
     nullArray.add(null);
     doAnswer(new ProduceResultsNewResultAnswer(nullArray, 0))
-        .when(mInputProducer).produceResults(any(Consumer.class), eq(mProducerContext));
+        .when(mInputProducer)
+        .produceResults(any(Consumer.class), eq(mProducerContext));
   }
 
   private void setupInputProducerFailure() {
-    doAnswer(new ProduceResultsFailureAnswer()).
-        when(mInputProducer).produceResults(any(Consumer.class), eq(mProducerContext));
+    doAnswer(new ProduceResultsFailureAnswer())
+        .when(mInputProducer)
+        .produceResults(any(Consumer.class), eq(mProducerContext));
   }
 
   private static class ProduceResultsNewResultAnswer implements Answer<Void> {
@@ -299,8 +313,7 @@ public class EncodedMemoryCacheProducerTest {
       while (iterator.hasNext()) {
         EncodedImage result = iterator.next();
         consumer.onNewResult(
-            result,
-            BaseConsumer.simpleStatusForIsLast(!iterator.hasNext()) | mExtraStatusFlags);
+            result, BaseConsumer.simpleStatusForIsLast(!iterator.hasNext()) | mExtraStatusFlags);
       }
       return null;
     }

@@ -8,13 +8,12 @@
 package com.facebook.imagepipeline.testing;
 
 import com.facebook.common.time.MonotonicClock;
+import com.facebook.infer.annotation.Nullsafe;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- *
- *
- */
+/** */
+@Nullsafe(Nullsafe.Mode.STRICT)
 public class FakeClock implements MonotonicClock {
 
   public interface OnTickListener {
@@ -57,13 +56,13 @@ public class FakeClock implements MonotonicClock {
   /**
    * Increments the clock's time gradually in several steps
    *
-   * The clock will be incremented by tickMs amount repeatedly until it has progress by totalMs
+   * <p>The clock will be incremented by tickMs amount repeatedly until it has progress by totalMs
    * from the given time when this call was made.
    *
-   * This call is useful for working with animations in tests.
+   * <p>This call is useful for working with animations in tests.
    *
-   * In the end of this call, the call will progress by exactly totalMs, even if it means the last
-   * tick of the clock is smaller than tickMs
+   * <p>In the end of this call, the call will progress by exactly totalMs, even if it means the
+   * last tick of the clock is smaller than tickMs
    *
    * @param tickMs the amount to tick the clock at each step
    * @param totalMs the total amount of time to elapse during the call

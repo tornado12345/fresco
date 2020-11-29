@@ -1,22 +1,30 @@
+/*
+ * Copyright (c) Facebook, Inc. and its affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+import com.facebook.fresco.buildsrc.Deps
+
 apply plugin: 'com.android.library'
 
 dependencies {
-    compileOnly "androidx.annotation:annotation:${versions.androidx.annotation}"
-    compileOnly "androidx.legacy:legacy-support-core-utils:${versions.androidx.legacy_support_core_utils}"
-    compileOnly "com.google.code.findbugs:jsr305:${JSR_305_VERSION}"
+    compileOnly Deps.AndroidX.androidxAnnotation
+    compileOnly Deps.AndroidX.legacySupportCoreUtils
+    compileOnly Deps.jsr305
 
-    implementation "com.nineoldandroids:library:${NINEOLDANDROID_VERSION}"
     implementation project(':drawee-backends:drawee-pipeline')
     implementation project(':samples:gestures')
 }
 
 android {
-    buildToolsVersion rootProject.ext.buildToolsVersion
-    compileSdkVersion rootProject.ext.compileSdkVersion
+    buildToolsVersion FrescoConfig.buildToolsVersion
+    compileSdkVersion FrescoConfig.compileSdkVersion
 
     defaultConfig {
-        minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
+        minSdkVersion FrescoConfig.minSdkVersion
+        targetSdkVersion FrescoConfig.targetSdkVersion
     }
 
     packagingOptions {

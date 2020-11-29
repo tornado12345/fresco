@@ -1,25 +1,36 @@
+/*
+ * Copyright (c) Facebook, Inc. and its affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+import com.facebook.fresco.buildsrc.Deps
+
 apply plugin: 'com.android.library'
 
-project.group = GROUP
-version = VERSION_NAME
-
 dependencies {
-    compileOnly "com.google.code.findbugs:jsr305:${JSR_305_VERSION}"
+    compileOnly Deps.inferAnnotation
+    compileOnly Deps.jsr305
 
-    api "com.squareup.okhttp3:okhttp:${OKHTTP3_VERSION}"
+    api Deps.okhttp3
 
     implementation project(':fbcore')
     implementation project(':imagepipeline')
+    implementation project(':imagepipeline-native')
+    implementation project(':memory-types:ashmem')
+    implementation project(':memory-types:nativememory')
+    implementation project(':memory-types:simple')
 }
 apply from: rootProject.file('release.gradle')
 
 android {
-    buildToolsVersion rootProject.ext.buildToolsVersion
-    compileSdkVersion rootProject.ext.compileSdkVersion
+    buildToolsVersion FrescoConfig.buildToolsVersion
+    compileSdkVersion FrescoConfig.compileSdkVersion
 
     defaultConfig {
-        minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
+        minSdkVersion FrescoConfig.minSdkVersion
+        targetSdkVersion FrescoConfig.targetSdkVersion
     }
 
     packagingOptions {

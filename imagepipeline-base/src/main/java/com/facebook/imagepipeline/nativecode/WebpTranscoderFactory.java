@@ -7,9 +7,10 @@
 
 package com.facebook.imagepipeline.nativecode;
 
-/**
- * This is the class responsible to return the WebpTranscoder if any
- */
+import com.facebook.infer.annotation.Nullsafe;
+
+/** This is the class responsible to return the WebpTranscoder if any */
+@Nullsafe(Nullsafe.Mode.STRICT)
 public class WebpTranscoderFactory {
 
   private static WebpTranscoder sWebpTranscoder;
@@ -18,9 +19,10 @@ public class WebpTranscoderFactory {
 
   static {
     try {
-      sWebpTranscoder = (WebpTranscoder) Class
-          .forName("com.facebook.imagepipeline.nativecode.WebpTranscoderImpl")
-          .newInstance();
+      sWebpTranscoder =
+          (WebpTranscoder)
+              Class.forName("com.facebook.imagepipeline.nativecode.WebpTranscoderImpl")
+                  .newInstance();
       sWebpTranscoderPresent = true;
     } catch (Throwable e) {
       sWebpTranscoderPresent = false;
@@ -30,5 +32,4 @@ public class WebpTranscoderFactory {
   public static WebpTranscoder getWebpTranscoder() {
     return sWebpTranscoder;
   }
-
 }

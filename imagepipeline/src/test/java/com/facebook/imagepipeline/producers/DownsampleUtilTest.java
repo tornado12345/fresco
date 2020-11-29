@@ -286,9 +286,7 @@ public class DownsampleUtilTest {
   }
 
   private void whenRequestResizeWidthHeightAndForcedRotation(
-      int width,
-      int height,
-      int rotationAngle) {
+      int width, int height, int rotationAngle) {
     when(mImageRequest.getPreferredWidth()).thenReturn(width);
     when(mImageRequest.getPreferredHeight()).thenReturn(height);
     when(mImageRequest.getResizeOptions()).thenReturn(new ResizeOptions(width, height));
@@ -297,13 +295,11 @@ public class DownsampleUtilTest {
   }
 
   private void whenRequestResizeWidthHeightAndMaxBitmapSize(
-      int width,
-      int height,
-      float maxBitmapSize) {
+      int width, int height, float maxBitmapSize) {
     when(mImageRequest.getPreferredWidth()).thenReturn(width);
     when(mImageRequest.getPreferredHeight()).thenReturn(height);
-    when(mImageRequest.getResizeOptions()).thenReturn(
-        new ResizeOptions(width, height, maxBitmapSize));
+    when(mImageRequest.getResizeOptions())
+        .thenReturn(new ResizeOptions(width, height, maxBitmapSize));
     when(mImageRequest.getRotationOptions()).thenReturn(RotationOptions.disableRotation());
   }
 }

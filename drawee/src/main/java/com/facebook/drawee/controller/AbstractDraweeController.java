@@ -9,9 +9,13 @@ package com.facebook.drawee.controller;
 
 import static com.facebook.drawee.components.DraweeEventTracker.Event;
 
+import android.graphics.PointF;
+import android.graphics.Rect;
 import android.graphics.drawable.Animatable;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.view.MotionEvent;
+import com.facebook.common.internal.ImmutableMap;
 import com.facebook.common.internal.Objects;
 import com.facebook.common.internal.Preconditions;
 import com.facebook.common.logging.FLog;
@@ -21,34 +25,47 @@ import com.facebook.datasource.DataSubscriber;
 import com.facebook.drawee.components.DeferredReleaser;
 import com.facebook.drawee.components.DraweeEventTracker;
 import com.facebook.drawee.components.RetryManager;
+import com.facebook.drawee.drawable.FadeDrawable;
+import com.facebook.drawee.generic.GenericDraweeHierarchy;
 import com.facebook.drawee.gestures.GestureDetector;
 import com.facebook.drawee.interfaces.DraweeController;
 import com.facebook.drawee.interfaces.DraweeHierarchy;
 import com.facebook.drawee.interfaces.SettableDraweeHierarchy;
+import com.facebook.fresco.middleware.MiddlewareUtils;
+import com.facebook.fresco.ui.common.ControllerListener2;
+import com.facebook.fresco.ui.common.ControllerListener2.Extras;
+import com.facebook.fresco.ui.common.ForwardingControllerListener2;
+import com.facebook.fresco.ui.common.LoggingListener;
 import com.facebook.imagepipeline.systrace.FrescoSystrace;
 import com.facebook.infer.annotation.ReturnsOwnership;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
 
 /**
- * Abstract Drawee controller that implements common functionality
- * regardless of the backend used to fetch the image.
+ * Abstract Drawee controller that implements common functionality regardless of the backend used to
+ * fetch the image.
  *
- * All methods should be called on the main UI thread.
+ * <p>All methods should be called on the main UI thread.
  *
  * @param <T> image type (e.g. Bitmap)
  * @param <INFO> image info type (can be same as T)
  */
 @NotThreadSafe
-public abstract class AbstractDraweeController<T, INFO> implements
-    DraweeController,
-    DeferredReleaser.Releasable,
-    GestureDetector.ClickListener {
+public abstract class AbstractDraweeController<T, INFO>
+    implements DraweeController, DeferredReleaser.Releasable, GestureDetector.ClickListener {
+
+  private static final Map<String, Object> COMPONENT_EXTRAS =
+      ImmutableMap.<String, Object>of("component_tag", "drawee");
+  private static final Map<String, Object> SHORTCUT_EXTRAS =
+      ImmutableMap.<String, Object>of(
+          "origin", "memory_bitmap",
+          "origin_sub", "shortcut");
 
   /**
-   * This class is used to allow an optimization of not creating a ForwardingControllerListener
-   * when there is only a single controller listener.
+   * This class is used to allow an optimization of not creating a ForwardingControllerListener when
+   * there is only a single controller listener.
    */
   private static class InternalForwardingListener<INFO> extends ForwardingControllerListener<INFO> {
     public static <INFO> InternalForwardingListener<INFO> createInternal(
@@ -78,6 +95,9 @@ public abstract class AbstractDraweeController<T, INFO> implements
   private @Nullable GestureDetector mGestureDetector;
   private @Nullable ControllerViewportVisibilityListener mControllerViewportVisibilityListener;
   protected @Nullable ControllerListener<INFO> mControllerListener;
+  protected ForwardingControllerListener2<INFO> mControllerListener2 =
+      new ForwardingControllerListener2<>();
+  protected @Nullable LoggingListener mLoggingListener;
 
   // Hierarchy
   private @Nullable SettableDraweeHierarchy mSettableDraweeHierarchy;
@@ -96,8 +116,9 @@ public abstract class AbstractDraweeController<T, INFO> implements
   private @Nullable String mContentDescription;
   private @Nullable DataSource<T> mDataSource;
   private @Nullable T mFetchedImage;
-  private @Nullable Drawable mDrawable;
   private boolean mJustConstructed = true;
+
+  protected @Nullable Drawable mDrawable;
 
   public AbstractDraweeController(
       DeferredReleaser deferredReleaser,
@@ -110,9 +131,10 @@ public abstract class AbstractDraweeController<T, INFO> implements
   }
 
   /**
-   * Initializes this controller with the new id and caller context.
-   * This allows for reusing of the existing controller instead of instantiating a new one.
-   * This method should be called when the controller is in detached state.
+   * Initializes this controller with the new id and caller context. This allows for reusing of the
+   * existing controller instead of instantiating a new one. This method should be called when the
+   * controller is in detached state.
+   *
    * @param id unique id for this controller
    * @param callerContext tag and context for this controller
    */
@@ -165,6 +187,10 @@ public abstract class AbstractDraweeController<T, INFO> implements
     if (FrescoSystrace.isTracing()) {
       FrescoSystrace.endSection();
     }
+
+    if (mLoggingListener != null) {
+      setUpLoggingListener();
+    }
   }
 
   @Override
@@ -186,7 +212,9 @@ public abstract class AbstractDraweeController<T, INFO> implements
     boolean wasRequestSubmitted = mIsRequestSubmitted;
     mIsRequestSubmitted = false;
     mHasFetchFailed = false;
+    Map<String, Object> datasourceExtras = null, imageExtras = null;
     if (mDataSource != null) {
+      datasourceExtras = mDataSource.getExtras();
       mDataSource.close();
       mDataSource = null;
     }
@@ -198,12 +226,13 @@ public abstract class AbstractDraweeController<T, INFO> implements
     }
     mDrawable = null;
     if (mFetchedImage != null) {
+      imageExtras = obtainExtrasFromImage(getImageInfo(mFetchedImage));
       logMessageAndImage("release", mFetchedImage);
       releaseImage(mFetchedImage);
       mFetchedImage = null;
     }
     if (wasRequestSubmitted) {
-      getControllerListener().onRelease(mId);
+      reportRelease(datasourceExtras, imageExtras);
     }
   }
 
@@ -218,7 +247,8 @@ public abstract class AbstractDraweeController<T, INFO> implements
   }
 
   /** Gets retry manager. */
-  @ReturnsOwnership protected RetryManager getRetryManager() {
+  @ReturnsOwnership
+  protected RetryManager getRetryManager() {
     if (mRetryManager == null) {
       mRetryManager = new RetryManager();
     }
@@ -263,14 +293,29 @@ public abstract class AbstractDraweeController<T, INFO> implements
       return;
     }
     if (mControllerListener != null) {
-      mControllerListener = InternalForwardingListener.createInternal(
-          mControllerListener,
-          controllerListener);
+      mControllerListener =
+          InternalForwardingListener.createInternal(mControllerListener, controllerListener);
       return;
     }
     // Listener only receives <INFO>, it never produces one.
     // That means if it can accept <? super INFO>, it can very well accept <INFO>.
     mControllerListener = (ControllerListener<INFO>) controllerListener;
+  }
+
+  public void addControllerListener2(ControllerListener2<INFO> controllerListener2) {
+    mControllerListener2.addListener(controllerListener2);
+  }
+
+  public void removeControllerListener2(ControllerListener2<INFO> controllerListener2) {
+    mControllerListener2.removeListener(controllerListener2);
+  }
+
+  public void setLoggingListener(final LoggingListener loggingListener) {
+    mLoggingListener = loggingListener;
+  }
+
+  protected @Nullable LoggingListener getLoggingListener() {
+    return mLoggingListener;
   }
 
   /** Removes controller listener. */
@@ -293,6 +338,10 @@ public abstract class AbstractDraweeController<T, INFO> implements
     return mControllerListener;
   }
 
+  protected ControllerListener2<INFO> getControllerListener2() {
+    return mControllerListener2;
+  }
+
   /** Sets the controller viewport visibility listener */
   public void setControllerViewportVisibilityListener(
       @Nullable ControllerViewportVisibilityListener controllerViewportVisibilityListener) {
@@ -301,8 +350,7 @@ public abstract class AbstractDraweeController<T, INFO> implements
 
   /** Gets the hierarchy */
   @Override
-  public @Nullable
-  DraweeHierarchy getHierarchy() {
+  public @Nullable DraweeHierarchy getHierarchy() {
     return mSettableDraweeHierarchy;
   }
 
@@ -310,17 +358,14 @@ public abstract class AbstractDraweeController<T, INFO> implements
    * Sets the hierarchy.
    *
    * <p>The controller should be detached when this method is called.
+   *
    * @param hierarchy This must be an instance of {@link SettableDraweeHierarchy}
    */
   @Override
   public void setHierarchy(@Nullable DraweeHierarchy hierarchy) {
     if (FLog.isLoggable(FLog.VERBOSE)) {
       FLog.v(
-          TAG,
-          "controller %x %s: setHierarchy: %s",
-          System.identityHashCode(this),
-          mId,
-          hierarchy);
+          TAG, "controller %x %s: setHierarchy: %s", System.identityHashCode(this), mId, hierarchy);
     }
     mEventTracker.recordEvent(
         (hierarchy != null) ? Event.ON_SET_HIERARCHY : Event.ON_CLEAR_HIERARCHY);
@@ -339,6 +384,32 @@ public abstract class AbstractDraweeController<T, INFO> implements
       Preconditions.checkArgument(hierarchy instanceof SettableDraweeHierarchy);
       mSettableDraweeHierarchy = (SettableDraweeHierarchy) hierarchy;
       mSettableDraweeHierarchy.setControllerOverlay(mControllerOverlay);
+    }
+
+    if (mLoggingListener != null) {
+      setUpLoggingListener();
+    }
+  }
+
+  private void setUpLoggingListener() {
+    if (mSettableDraweeHierarchy instanceof GenericDraweeHierarchy) {
+      ((GenericDraweeHierarchy) mSettableDraweeHierarchy)
+          .setOnFadeListener(
+              new FadeDrawable.OnFadeListener() {
+                @Override
+                public void onFadeFinished() {
+                  if (mLoggingListener != null) {
+                    mLoggingListener.onFadeFinished(mId);
+                  }
+                }
+
+                @Override
+                public void onFadeStarted() {
+                  if (mLoggingListener != null) {
+                    mLoggingListener.onFadeStarted(mId);
+                  }
+                }
+              });
     }
   }
 
@@ -462,7 +533,7 @@ public abstract class AbstractDraweeController<T, INFO> implements
       mIsRequestSubmitted = true;
       mHasFetchFailed = false;
       mEventTracker.recordEvent(Event.ON_SUBMIT_CACHE_HIT);
-      getControllerListener().onSubmit(mId, mCallerContext);
+      reportSubmit(mDataSource, getImageInfo(closeableImage));
       onImageLoadedFromCacheImmediately(mId, closeableImage);
       onNewResultInternal(mId, mDataSource, closeableImage, 1.0f, true, true, true);
       if (FrescoSystrace.isTracing()) {
@@ -474,11 +545,11 @@ public abstract class AbstractDraweeController<T, INFO> implements
       return;
     }
     mEventTracker.recordEvent(Event.ON_DATASOURCE_SUBMIT);
-    getControllerListener().onSubmit(mId, mCallerContext);
     mSettableDraweeHierarchy.setProgress(0, true);
     mIsRequestSubmitted = true;
     mHasFetchFailed = false;
     mDataSource = getDataSource();
+    reportSubmit(mDataSource, null);
     if (FLog.isLoggable(FLog.VERBOSE)) {
       FLog.v(
           TAG,
@@ -566,16 +637,16 @@ public abstract class AbstractDraweeController<T, INFO> implements
           logMessageAndImage("set_final_result @ onNewResult", image);
           mDataSource = null;
           mSettableDraweeHierarchy.setImage(drawable, 1f, wasImmediate);
-          getControllerListener().onFinalImageSet(id, getImageInfo(image), getAnimatable());
+          reportSuccess(id, image, dataSource);
         } else if (deliverTempResult) {
           logMessageAndImage("set_temporary_result @ onNewResult", image);
           mSettableDraweeHierarchy.setImage(drawable, 1f, wasImmediate);
-          getControllerListener().onFinalImageSet(id, getImageInfo(image), getAnimatable());
+          reportSuccess(id, image, dataSource);
           // IMPORTANT: do not execute any instance-specific code after this point
         } else {
           logMessageAndImage("set_intermediate_result @ onNewResult", image);
           mSettableDraweeHierarchy.setImage(drawable, progress, wasImmediate);
-          getControllerListener().onIntermediateImageSet(id, getImageInfo(image));
+          reportIntermediateSet(id, image);
           // IMPORTANT: do not execute any instance-specific code after this point
         }
       } finally {
@@ -623,11 +694,11 @@ public abstract class AbstractDraweeController<T, INFO> implements
       } else {
         mSettableDraweeHierarchy.setFailure(throwable);
       }
-      getControllerListener().onFailure(mId, throwable);
+      reportFailure(throwable, dataSource);
       // IMPORTANT: do not execute any instance-specific code after this point
     } else {
       logMessageAndFailure("intermediate_failed @ onFailure", throwable);
-      getControllerListener().onIntermediateImageFailed(mId, throwable);
+      reportIntermediateFailure(throwable);
       // IMPORTANT: do not execute any instance-specific code after this point
     }
     if (FrescoSystrace.isTracing()) {
@@ -636,10 +707,7 @@ public abstract class AbstractDraweeController<T, INFO> implements
   }
 
   private void onProgressUpdateInternal(
-      String id,
-      DataSource<T> dataSource,
-      float progress,
-      boolean isFinished) {
+      String id, DataSource<T> dataSource, float progress, boolean isFinished) {
     // ignore late callbacks (data source that failed is not the one we expected)
     if (!isExpectedDataSource(id, dataSource)) {
       logMessageAndFailure("ignore_old_datasource @ onProgress", null);
@@ -726,4 +794,82 @@ public abstract class AbstractDraweeController<T, INFO> implements
   }
 
   protected void onImageLoadedFromCacheImmediately(String id, T cachedImage) {}
+
+  protected void reportSubmit(DataSource<T> dataSource, @Nullable INFO info) {
+    getControllerListener().onSubmit(mId, mCallerContext);
+    getControllerListener2()
+        .onSubmit(mId, mCallerContext, obtainExtras(dataSource, info, getMainUri()));
+  }
+
+  private void reportIntermediateSet(String id, @Nullable T image) {
+    INFO info = getImageInfo(image);
+    getControllerListener().onIntermediateImageSet(id, info);
+    getControllerListener2().onIntermediateImageSet(id, info);
+  }
+
+  private void reportIntermediateFailure(Throwable throwable) {
+    getControllerListener().onIntermediateImageFailed(mId, throwable);
+    getControllerListener2().onIntermediateImageFailed(mId);
+  }
+
+  private void reportSuccess(String id, @Nullable T image, @Nullable DataSource<T> dataSource) {
+    INFO info = getImageInfo(image);
+    getControllerListener().onFinalImageSet(id, info, getAnimatable());
+    getControllerListener2().onFinalImageSet(id, info, obtainExtras(dataSource, info, null));
+  }
+
+  private void reportFailure(Throwable throwable, @Nullable DataSource<T> dataSource) {
+    final Extras extras = obtainExtras(dataSource, null, null);
+    getControllerListener().onFailure(mId, throwable);
+    getControllerListener2().onFailure(mId, throwable, extras);
+  }
+
+  private void reportRelease(
+      @Nullable Map<String, Object> datasourceExtras, @Nullable Map<String, Object> imageExtras) {
+    getControllerListener().onRelease(mId);
+    getControllerListener2().onRelease(mId, obtainExtras(datasourceExtras, imageExtras, null));
+  }
+
+  private Extras obtainExtras(
+      @Nullable Map<String, Object> datasourceExtras,
+      @Nullable Map<String, Object> imageExtras,
+      @Nullable Uri mainUri) {
+    String scaleType = null;
+    PointF focusPoint = null;
+    if (mSettableDraweeHierarchy instanceof GenericDraweeHierarchy) {
+      scaleType =
+          String.valueOf(
+              ((GenericDraweeHierarchy) mSettableDraweeHierarchy).getActualImageScaleType());
+      focusPoint = ((GenericDraweeHierarchy) mSettableDraweeHierarchy).getActualImageFocusPoint();
+    }
+    return MiddlewareUtils.obtainExtras(
+        COMPONENT_EXTRAS,
+        SHORTCUT_EXTRAS,
+        datasourceExtras,
+        getDimensions(),
+        scaleType,
+        focusPoint,
+        imageExtras,
+        getCallerContext(),
+        mainUri);
+  }
+
+  protected @Nullable Uri getMainUri() {
+    return null;
+  };
+
+  private Extras obtainExtras(
+      @Nullable DataSource<T> datasource, @Nullable INFO info, @Nullable Uri mainUri) {
+    return obtainExtras(
+        datasource == null ? null : datasource.getExtras(), obtainExtrasFromImage(info), mainUri);
+  }
+
+  private @Nullable Rect getDimensions() {
+    if (mSettableDraweeHierarchy == null) {
+      return null;
+    }
+    return mSettableDraweeHierarchy.getBounds();
+  }
+
+  public abstract @Nullable Map<String, Object> obtainExtrasFromImage(INFO info);
 }

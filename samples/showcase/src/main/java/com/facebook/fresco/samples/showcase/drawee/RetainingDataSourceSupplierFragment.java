@@ -1,14 +1,10 @@
 /*
- * This file provided by Facebook is for non-commercial testing and evaluation
- * purposes only.  Facebook reserves all rights not expressly granted.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- * FACEBOOK BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
  */
+
 package com.facebook.fresco.samples.showcase.drawee;
 
 import android.graphics.drawable.Animatable;
@@ -26,7 +22,6 @@ import com.facebook.drawee.controller.ControllerListener;
 import com.facebook.drawee.view.SimpleDraweeView;
 import com.facebook.fresco.samples.showcase.BaseShowcaseFragment;
 import com.facebook.fresco.samples.showcase.R;
-import com.facebook.fresco.samples.showcase.misc.ImageUriProvider;
 import com.facebook.imagepipeline.image.CloseableImage;
 import com.facebook.imagepipeline.image.ImageInfo;
 import com.facebook.imagepipeline.request.ImageRequest;
@@ -53,7 +48,7 @@ public class RetainingDataSourceSupplierFragment extends BaseShowcaseFragment {
   public void onCreate(@Nullable Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
 
-    mSampleUris = ImageUriProvider.getInstance(getContext()).getSampleGifUris();
+    mSampleUris = sampleUris().getSampleGifUris();
   }
 
   @Nullable
@@ -81,11 +76,6 @@ public class RetainingDataSourceSupplierFragment extends BaseShowcaseFragment {
             replaceImage(retainingSupplier);
           }
         });
-  }
-
-  @Override
-  public int getTitleId() {
-    return R.string.drawee_retaining_supplier_title;
   }
 
   private void replaceImage(

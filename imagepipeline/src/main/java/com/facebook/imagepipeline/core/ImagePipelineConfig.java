@@ -10,31 +10,42 @@ package com.facebook.imagepipeline.core;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.os.Build;
+import androidx.annotation.VisibleForTesting;
+import com.facebook.cache.common.CacheKey;
 import com.facebook.cache.disk.DiskCacheConfig;
+import com.facebook.callercontext.CallerContextVerifier;
 import com.facebook.common.internal.Preconditions;
 import com.facebook.common.internal.Supplier;
-import com.facebook.common.internal.VisibleForTesting;
 import com.facebook.common.memory.MemoryTrimmableRegistry;
 import com.facebook.common.memory.NoOpMemoryTrimmableRegistry;
+import com.facebook.common.memory.PooledByteBuffer;
 import com.facebook.common.webp.BitmapCreator;
 import com.facebook.common.webp.WebpBitmapFactory;
 import com.facebook.common.webp.WebpSupportStatus;
 import com.facebook.imagepipeline.bitmaps.HoneycombBitmapCreator;
 import com.facebook.imagepipeline.bitmaps.PlatformBitmapFactory;
+import com.facebook.imagepipeline.cache.BitmapMemoryCacheFactory;
 import com.facebook.imagepipeline.cache.BitmapMemoryCacheTrimStrategy;
 import com.facebook.imagepipeline.cache.CacheKeyFactory;
+import com.facebook.imagepipeline.cache.CountingLruBitmapMemoryCacheFactory;
 import com.facebook.imagepipeline.cache.CountingMemoryCache;
 import com.facebook.imagepipeline.cache.DefaultBitmapMemoryCacheParamsSupplier;
 import com.facebook.imagepipeline.cache.DefaultCacheKeyFactory;
 import com.facebook.imagepipeline.cache.DefaultEncodedMemoryCacheParamsSupplier;
 import com.facebook.imagepipeline.cache.ImageCacheStatsTracker;
+import com.facebook.imagepipeline.cache.MemoryCache;
 import com.facebook.imagepipeline.cache.MemoryCacheParams;
 import com.facebook.imagepipeline.cache.NoOpImageCacheStatsTracker;
+import com.facebook.imagepipeline.debug.CloseableReferenceLeakTracker;
+import com.facebook.imagepipeline.debug.NoOpCloseableReferenceLeakTracker;
 import com.facebook.imagepipeline.decoder.ImageDecoder;
 import com.facebook.imagepipeline.decoder.ImageDecoderConfig;
 import com.facebook.imagepipeline.decoder.ProgressiveJpegConfig;
 import com.facebook.imagepipeline.decoder.SimpleProgressiveJpegConfig;
+import com.facebook.imagepipeline.image.CloseableImage;
 import com.facebook.imagepipeline.listener.RequestListener;
+import com.facebook.imagepipeline.listener.RequestListener2;
 import com.facebook.imagepipeline.memory.PoolConfig;
 import com.facebook.imagepipeline.memory.PoolFactory;
 import com.facebook.imagepipeline.producers.HttpUrlConnectionNetworkFetcher;
@@ -49,8 +60,7 @@ import javax.annotation.Nullable;
 /**
  * Master configuration class for the image pipeline library.
  *
- * To use:
- * <code>
+ * <p>To use: <code>
  *   ImagePipelineConfig config = ImagePipelineConfig.newBuilder()
  *       .setXXX(xxx)
  *       .setYYY(yyy)
@@ -68,7 +78,9 @@ public class ImagePipelineConfig {
   // There are a lot of parameters in this class. Please follow strict alphabetical order.
   private final Bitmap.Config mBitmapConfig;
   private final Supplier<MemoryCacheParams> mBitmapMemoryCacheParamsSupplier;
-  private final CountingMemoryCache.CacheTrimStrategy mBitmapMemoryCacheTrimStrategy;
+  private final MemoryCache.CacheTrimStrategy mBitmapMemoryCacheTrimStrategy;
+  private final CountingMemoryCache.EntryStateObserver<CacheKey>
+      mBitmapMemoryCacheEntryStateObserver;
   private final CacheKeyFactory mCacheKeyFactory;
   private final Context mContext;
   private final boolean mDownsampleEnabled;
@@ -89,14 +101,20 @@ public class ImagePipelineConfig {
   private final PoolFactory mPoolFactory;
   private final ProgressiveJpegConfig mProgressiveJpegConfig;
   private final Set<RequestListener> mRequestListeners;
+  private final Set<RequestListener2> mRequestListener2s;
   private final boolean mResizeAndRotateEnabledForNetwork;
   private final DiskCacheConfig mSmallImageDiskCacheConfig;
   @Nullable private final ImageDecoderConfig mImageDecoderConfig;
   private final ImagePipelineExperiments mImagePipelineExperiments;
   private final boolean mDiskCacheEnabled;
+  @Nullable private final CallerContextVerifier mCallerContextVerifier;
+  private final CloseableReferenceLeakTracker mCloseableReferenceLeakTracker;
+  @Nullable private final MemoryCache<CacheKey, CloseableImage> mBitmapCache;
+  @Nullable private final MemoryCache<CacheKey, PooledByteBuffer> mEncodedMemoryCache;
+  private final BitmapMemoryCacheFactory mBitmapMemoryCacheFactory;
 
-  private static DefaultImageRequestConfig
-      sDefaultImageRequestConfig = new DefaultImageRequestConfig();
+  private static DefaultImageRequestConfig sDefaultImageRequestConfig =
+      new DefaultImageRequestConfig();
 
   private ImagePipelineConfig(Builder builder) {
     if (FrescoSystrace.isTracing()) {
@@ -113,6 +131,7 @@ public class ImagePipelineConfig {
         builder.mBitmapMemoryCacheTrimStrategy == null
             ? new BitmapMemoryCacheTrimStrategy()
             : builder.mBitmapMemoryCacheTrimStrategy;
+    mBitmapMemoryCacheEntryStateObserver = builder.mBitmapMemoryCacheEntryStateObserver;
     mBitmapConfig = builder.mBitmapConfig == null ? Bitmap.Config.ARGB_8888 : builder.mBitmapConfig;
     mCacheKeyFactory =
         builder.mCacheKeyFactory == null
@@ -180,6 +199,10 @@ public class ImagePipelineConfig {
         builder.mRequestListeners == null
             ? new HashSet<RequestListener>()
             : builder.mRequestListeners;
+    mRequestListener2s =
+        builder.mRequestListener2s == null
+            ? new HashSet<RequestListener2>()
+            : builder.mRequestListener2s;
     mResizeAndRotateEnabledForNetwork = builder.mResizeAndRotateEnabledForNetwork;
     mSmallImageDiskCacheConfig =
         builder.mSmallImageDiskCacheConfig == null
@@ -193,6 +216,14 @@ public class ImagePipelineConfig {
             ? new DefaultExecutorSupplier(numCpuBoundThreads)
             : builder.mExecutorSupplier;
     mDiskCacheEnabled = builder.mDiskCacheEnabled;
+    mCallerContextVerifier = builder.mCallerContextVerifier;
+    mCloseableReferenceLeakTracker = builder.mCloseableReferenceLeakTracker;
+    mBitmapCache = builder.mBitmapMemoryCache;
+    mBitmapMemoryCacheFactory =
+        builder.mBitmapMemoryCacheFactory == null
+            ? new CountingLruBitmapMemoryCacheFactory()
+            : builder.mBitmapMemoryCacheFactory;
+    mEncodedMemoryCache = builder.mEncodedMemoryCache;
     // Here we manage the WebpBitmapFactory implementation if any
     WebpBitmapFactory webpBitmapFactory = mImagePipelineExperiments.getWebpBitmapFactory();
     if (webpBitmapFactory != null) {
@@ -255,8 +286,12 @@ public class ImagePipelineConfig {
     return mBitmapMemoryCacheParamsSupplier;
   }
 
-  public CountingMemoryCache.CacheTrimStrategy getBitmapMemoryCacheTrimStrategy() {
+  public MemoryCache.CacheTrimStrategy getBitmapMemoryCacheTrimStrategy() {
     return mBitmapMemoryCacheTrimStrategy;
+  }
+
+  public CountingMemoryCache.EntryStateObserver<CacheKey> getBitmapMemoryCacheEntryStateObserver() {
+    return mBitmapMemoryCacheEntryStateObserver;
   }
 
   public CacheKeyFactory getCacheKeyFactory() {
@@ -349,6 +384,10 @@ public class ImagePipelineConfig {
     return Collections.unmodifiableSet(mRequestListeners);
   }
 
+  public Set<RequestListener2> getRequestListener2s() {
+    return Collections.unmodifiableSet(mRequestListener2s);
+  }
+
   public boolean isResizeAndRotateEnabledForNetwork() {
     return mResizeAndRotateEnabledForNetwork;
   }
@@ -362,8 +401,17 @@ public class ImagePipelineConfig {
     return mImageDecoderConfig;
   }
 
+  @Nullable
+  public CallerContextVerifier getCallerContextVerifier() {
+    return mCallerContextVerifier;
+  }
+
   public ImagePipelineExperiments getExperiments() {
     return mImagePipelineExperiments;
+  }
+
+  public CloseableReferenceLeakTracker getCloseableReferenceLeakTracker() {
+    return mCloseableReferenceLeakTracker;
   }
 
   public static Builder newBuilder(Context context) {
@@ -388,22 +436,38 @@ public class ImagePipelineConfig {
       final Builder builder, final ImagePipelineExperiments imagePipelineExperiments) {
     if (builder.mMemoryChunkType != null) {
       return builder.mMemoryChunkType;
-    } else if (imagePipelineExperiments.isNativeCodeDisabled()) {
+    } else if (imagePipelineExperiments.getMemoryType() == MemoryChunkType.ASHMEM_MEMORY
+        && Build.VERSION.SDK_INT >= 27) {
+      return MemoryChunkType.ASHMEM_MEMORY;
+    } else if (imagePipelineExperiments.getMemoryType() == MemoryChunkType.BUFFER_MEMORY) {
       return MemoryChunkType.BUFFER_MEMORY;
+    } else if (imagePipelineExperiments.getMemoryType() == MemoryChunkType.NATIVE_MEMORY) {
+      return MemoryChunkType.NATIVE_MEMORY;
     } else {
       return MemoryChunkType.NATIVE_MEMORY;
     }
   }
 
-  /**
-   * Contains default configuration that can be personalized for all the request
-   */
+  @Nullable
+  public MemoryCache<CacheKey, CloseableImage> getBitmapCacheOverride() {
+    return mBitmapCache;
+  }
+
+  @Nullable
+  public MemoryCache<CacheKey, PooledByteBuffer> getEncodedMemoryCacheOverride() {
+    return mEncodedMemoryCache;
+  }
+
+  public BitmapMemoryCacheFactory getBitmapMemoryCacheFactory() {
+    return mBitmapMemoryCacheFactory;
+  }
+
+  /** Contains default configuration that can be personalized for all the request */
   public static class DefaultImageRequestConfig {
 
     private boolean mProgressiveRenderingEnabled = false;
 
-    private DefaultImageRequestConfig() {
-    }
+    private DefaultImageRequestConfig() {}
 
     public void setProgressiveRenderingEnabled(boolean progressiveRenderingEnabled) {
       this.mProgressiveRenderingEnabled = progressiveRenderingEnabled;
@@ -418,7 +482,8 @@ public class ImagePipelineConfig {
 
     private Bitmap.Config mBitmapConfig;
     private Supplier<MemoryCacheParams> mBitmapMemoryCacheParamsSupplier;
-    private CountingMemoryCache.CacheTrimStrategy mBitmapMemoryCacheTrimStrategy;
+    private CountingMemoryCache.EntryStateObserver<CacheKey> mBitmapMemoryCacheEntryStateObserver;
+    private MemoryCache.CacheTrimStrategy mBitmapMemoryCacheTrimStrategy;
     private CacheKeyFactory mCacheKeyFactory;
     private final Context mContext;
     private boolean mDownsampleEnabled = false;
@@ -437,14 +502,21 @@ public class ImagePipelineConfig {
     private PoolFactory mPoolFactory;
     private ProgressiveJpegConfig mProgressiveJpegConfig;
     private Set<RequestListener> mRequestListeners;
+    private Set<RequestListener2> mRequestListener2s;
     private boolean mResizeAndRotateEnabledForNetwork = true;
     private DiskCacheConfig mSmallImageDiskCacheConfig;
     private FileCacheFactory mFileCacheFactory;
     private ImageDecoderConfig mImageDecoderConfig;
     private int mHttpConnectionTimeout = -1;
-    private final ImagePipelineExperiments.Builder mExperimentsBuilder
-        = new ImagePipelineExperiments.Builder(this);
+    private final ImagePipelineExperiments.Builder mExperimentsBuilder =
+        new ImagePipelineExperiments.Builder(this);
     private boolean mDiskCacheEnabled = true;
+    private CallerContextVerifier mCallerContextVerifier;
+    private CloseableReferenceLeakTracker mCloseableReferenceLeakTracker =
+        new NoOpCloseableReferenceLeakTracker();
+    @Nullable private MemoryCache<CacheKey, CloseableImage> mBitmapMemoryCache;
+    @Nullable private MemoryCache<CacheKey, PooledByteBuffer> mEncodedMemoryCache;
+    @Nullable private BitmapMemoryCacheFactory mBitmapMemoryCacheFactory;
 
     private Builder(Context context) {
       // Doesn't use a setter as always required.
@@ -463,8 +535,13 @@ public class ImagePipelineConfig {
       return this;
     }
 
-    public Builder setBitmapMemoryCacheTrimStrategy(
-        CountingMemoryCache.CacheTrimStrategy trimStrategy) {
+    public Builder setBitmapMemoryCacheEntryStateObserver(
+        CountingMemoryCache.EntryStateObserver<CacheKey> bitmapMemoryCacheEntryStateObserver) {
+      mBitmapMemoryCacheEntryStateObserver = bitmapMemoryCacheEntryStateObserver;
+      return this;
+    }
+
+    public Builder setBitmapMemoryCacheTrimStrategy(MemoryCache.CacheTrimStrategy trimStrategy) {
       mBitmapMemoryCacheTrimStrategy = trimStrategy;
       return this;
     }
@@ -591,6 +668,11 @@ public class ImagePipelineConfig {
       return this;
     }
 
+    public Builder setRequestListener2s(Set<RequestListener2> requestListeners) {
+      mRequestListener2s = requestListeners;
+      return this;
+    }
+
     public Builder setResizeAndRotateEnabledForNetwork(boolean resizeAndRotateEnabledForNetwork) {
       mResizeAndRotateEnabledForNetwork = resizeAndRotateEnabledForNetwork;
       return this;
@@ -604,6 +686,40 @@ public class ImagePipelineConfig {
     public Builder setImageDecoderConfig(ImageDecoderConfig imageDecoderConfig) {
       mImageDecoderConfig = imageDecoderConfig;
       return this;
+    }
+
+    public Builder setCallerContextVerifier(CallerContextVerifier callerContextVerifier) {
+      mCallerContextVerifier = callerContextVerifier;
+      return this;
+    }
+
+    public Builder setCloseableReferenceLeakTracker(
+        CloseableReferenceLeakTracker closeableReferenceLeakTracker) {
+      mCloseableReferenceLeakTracker = closeableReferenceLeakTracker;
+      return this;
+    }
+
+    public Builder setBitmapMemoryCache(
+        @Nullable MemoryCache<CacheKey, CloseableImage> bitmapMemoryCache) {
+      mBitmapMemoryCache = bitmapMemoryCache;
+      return this;
+    }
+
+    public Builder setEncodedMemoryCache(
+        @Nullable MemoryCache<CacheKey, PooledByteBuffer> encodedMemoryCache) {
+      mEncodedMemoryCache = encodedMemoryCache;
+      return this;
+    }
+
+    public Builder setBitmapMemoryCacheFactory(
+        @Nullable BitmapMemoryCacheFactory bitmapMemoryCacheFactory) {
+      mBitmapMemoryCacheFactory = bitmapMemoryCacheFactory;
+      return this;
+    }
+
+    @Nullable
+    public BitmapMemoryCacheFactory getBitmapMemoryCacheFactory() {
+      return mBitmapMemoryCacheFactory;
     }
 
     public ImagePipelineExperiments.Builder experiment() {

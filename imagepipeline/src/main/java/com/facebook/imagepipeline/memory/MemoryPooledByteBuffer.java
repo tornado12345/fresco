@@ -7,8 +7,8 @@
 
 package com.facebook.imagepipeline.memory;
 
+import androidx.annotation.VisibleForTesting;
 import com.facebook.common.internal.Preconditions;
-import com.facebook.common.internal.VisibleForTesting;
 import com.facebook.common.memory.PooledByteBuffer;
 import com.facebook.common.references.CloseableReference;
 import java.nio.ByteBuffer;
@@ -16,10 +16,7 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
 
-/**
- * An implementation of {@link PooledByteBuffer} that uses ({@link MemoryChunk}) to
- * store data
- */
+/** An implementation of {@link PooledByteBuffer} that uses ({@link MemoryChunk}) to store data */
 @ThreadSafe
 public class MemoryPooledByteBuffer implements PooledByteBuffer {
 
@@ -104,5 +101,11 @@ public class MemoryPooledByteBuffer implements PooledByteBuffer {
     if (isClosed()) {
       throw new ClosedException();
     }
+  }
+
+  @GuardedBy("this")
+  @VisibleForTesting
+  CloseableReference<MemoryChunk> getCloseableReference() {
+    return mBufRef;
   }
 }

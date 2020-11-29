@@ -4,16 +4,19 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
+
 package com.facebook.imagepipeline.filter;
 
 import android.graphics.Bitmap;
 import com.facebook.common.internal.Preconditions;
 import com.facebook.imageutils.BitmapUtil;
+import com.facebook.infer.annotation.Nullsafe;
 
 /**
  * Modified midpoint circle algorithm. Clients that look for better performances should use the
  * native implementation of this algorithm in NativeRoundingFilter.
  */
+@Nullsafe(Nullsafe.Mode.STRICT)
 public final class InPlaceRoundFilter {
 
   private InPlaceRoundFilter() {}

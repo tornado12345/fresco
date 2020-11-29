@@ -7,9 +7,9 @@
 
 package com.facebook.imagepipeline.producers;
 
+import androidx.annotation.VisibleForTesting;
 import com.facebook.cache.common.CacheKey;
 import com.facebook.common.internal.ImmutableMap;
-import com.facebook.common.internal.VisibleForTesting;
 import com.facebook.common.references.CloseableReference;
 import com.facebook.imagepipeline.cache.CacheKeyFactory;
 import com.facebook.imagepipeline.cache.MemoryCache;
@@ -18,9 +18,7 @@ import com.facebook.imagepipeline.request.ImageRequest;
 import com.facebook.imagepipeline.request.Postprocessor;
 import com.facebook.imagepipeline.request.RepeatedPostprocessor;
 
-/**
- * Memory cache producer for the bitmap memory cache.
- */
+/** Memory cache producer for the bitmap memory cache. */
 public class PostprocessedBitmapMemoryCacheProducer
     implements Producer<CloseableReference<CloseableImage>> {
 
@@ -45,8 +43,7 @@ public class PostprocessedBitmapMemoryCacheProducer
       final Consumer<CloseableReference<CloseableImage>> consumer,
       final ProducerContext producerContext) {
 
-    final ProducerListener listener = producerContext.getListener();
-    final String requestId = producerContext.getId();
+    final ProducerListener2 listener = producerContext.getProducerListener();
     final ImageRequest imageRequest = producerContext.getImageRequest();
     final Object callerContext = producerContext.getCallerContext();
 
@@ -56,16 +53,19 @@ public class PostprocessedBitmapMemoryCacheProducer
       mInputProducer.produceResults(consumer, producerContext);
       return;
     }
-    listener.onProducerStart(requestId, getProducerName());
+    listener.onProducerStart(producerContext, getProducerName());
     final CacheKey cacheKey =
         mCacheKeyFactory.getPostprocessedBitmapCacheKey(imageRequest, callerContext);
     CloseableReference<CloseableImage> cachedReference = mMemoryCache.get(cacheKey);
     if (cachedReference != null) {
       listener.onProducerFinishWithSuccess(
-          requestId,
+          producerContext,
           getProducerName(),
-          listener.requiresExtraMap(requestId) ? ImmutableMap.of(VALUE_FOUND, "true") : null);
-      listener.onUltimateProducerReached(requestId, PRODUCER_NAME, true);
+          listener.requiresExtraMap(producerContext, getProducerName())
+              ? ImmutableMap.of(VALUE_FOUND, "true")
+              : null);
+      listener.onUltimateProducerReached(producerContext, PRODUCER_NAME, true);
+      producerContext.putOriginExtra("memory_bitmap", "postprocessed");
       consumer.onProgressUpdate(1.0f);
       consumer.onNewResult(cachedReference, Consumer.IS_LAST);
       cachedReference.close();
@@ -77,16 +77,18 @@ public class PostprocessedBitmapMemoryCacheProducer
           new CachedPostprocessorConsumer(
               consumer, cacheKey, isRepeatedProcessor, mMemoryCache, isMemoryCachedEnabled);
       listener.onProducerFinishWithSuccess(
-          requestId,
+          producerContext,
           getProducerName(),
-          listener.requiresExtraMap(requestId) ? ImmutableMap.of(VALUE_FOUND, "false") : null);
+          listener.requiresExtraMap(producerContext, getProducerName())
+              ? ImmutableMap.of(VALUE_FOUND, "false")
+              : null);
       mInputProducer.produceResults(cachedConsumer, producerContext);
     }
   }
 
-  public static class CachedPostprocessorConsumer extends DelegatingConsumer<
-      CloseableReference<CloseableImage>,
-      CloseableReference<CloseableImage>> {
+  public static class CachedPostprocessorConsumer
+      extends DelegatingConsumer<
+          CloseableReference<CloseableImage>, CloseableReference<CloseableImage>> {
 
     private final CacheKey mCacheKey;
     private final boolean mIsRepeatedProcessor;
@@ -108,8 +110,7 @@ public class PostprocessedBitmapMemoryCacheProducer
 
     @Override
     protected void onNewResultImpl(
-        CloseableReference<CloseableImage> newResult,
-        @Status int status) {
+        CloseableReference<CloseableImage> newResult, @Status int status) {
       // ignore invalid intermediate results and forward the null result if last
       if (newResult == null) {
         if (isLast(status)) {
@@ -128,8 +129,7 @@ public class PostprocessedBitmapMemoryCacheProducer
       }
       try {
         getConsumer().onProgressUpdate(1f);
-        getConsumer().onNewResult(
-            (newCachedResult != null) ? newCachedResult : newResult, status);
+        getConsumer().onNewResult((newCachedResult != null) ? newCachedResult : newResult, status);
       } finally {
         CloseableReference.closeSafely(newCachedResult);
       }

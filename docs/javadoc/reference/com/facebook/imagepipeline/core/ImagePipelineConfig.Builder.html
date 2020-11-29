@@ -157,11 +157,15 @@
     <li class="api apilevel-">
   <a href="../../../../com/facebook/animated/webp/package-summary.html">com.facebook.animated.webp</a></li>
     <li class="api apilevel-">
+  <a href="../../../../com/facebook/animated/webpdrawable/package-summary.html">com.facebook.animated.webpdrawable</a></li>
+    <li class="api apilevel-">
   <a href="../../../../com/facebook/binaryresource/package-summary.html">com.facebook.binaryresource</a></li>
     <li class="api apilevel-">
   <a href="../../../../com/facebook/cache/common/package-summary.html">com.facebook.cache.common</a></li>
     <li class="api apilevel-">
   <a href="../../../../com/facebook/cache/disk/package-summary.html">com.facebook.cache.disk</a></li>
+    <li class="api apilevel-">
+  <a href="../../../../com/facebook/callercontext/package-summary.html">com.facebook.callercontext</a></li>
     <li class="api apilevel-">
   <a href="../../../../com/facebook/common/activitylistener/package-summary.html">com.facebook.common.activitylistener</a></li>
     <li class="api apilevel-">
@@ -205,8 +209,6 @@
     <li class="api apilevel-">
   <a href="../../../../com/facebook/drawee/backends/pipeline/info/internal/package-summary.html">com.facebook.drawee.backends.pipeline.info.internal</a></li>
     <li class="api apilevel-">
-  <a href="../../../../com/facebook/drawee/backends/volley/package-summary.html">com.facebook.drawee.backends.volley</a></li>
-    <li class="api apilevel-">
   <a href="../../../../com/facebook/drawee/components/package-summary.html">com.facebook.drawee.components</a></li>
     <li class="api apilevel-">
   <a href="../../../../com/facebook/drawee/controller/package-summary.html">com.facebook.drawee.controller</a></li>
@@ -245,6 +247,10 @@
     <li class="api apilevel-">
   <a href="../../../../com/facebook/fresco/animation/frame/package-summary.html">com.facebook.fresco.animation.frame</a></li>
     <li class="api apilevel-">
+  <a href="../../../../com/facebook/fresco/middleware/package-summary.html">com.facebook.fresco.middleware</a></li>
+    <li class="api apilevel-">
+  <a href="../../../../com/facebook/fresco/ui/common/package-summary.html">com.facebook.fresco.ui.common</a></li>
+    <li class="api apilevel-">
   <a href="../../../../com/facebook/imageformat/package-summary.html">com.facebook.imageformat</a></li>
     <li class="api apilevel-">
   <a href="../../../../com/facebook/imagepipeline/animated/base/package-summary.html">com.facebook.imagepipeline.animated.base</a></li>
@@ -279,9 +285,13 @@
     <li class="api apilevel-">
   <a href="../../../../com/facebook/imagepipeline/image/package-summary.html">com.facebook.imagepipeline.image</a></li>
     <li class="api apilevel-">
+  <a href="../../../../com/facebook/imagepipeline/instrumentation/package-summary.html">com.facebook.imagepipeline.instrumentation</a></li>
+    <li class="api apilevel-">
   <a href="../../../../com/facebook/imagepipeline/listener/package-summary.html">com.facebook.imagepipeline.listener</a></li>
     <li class="api apilevel-">
   <a href="../../../../com/facebook/imagepipeline/memory/package-summary.html">com.facebook.imagepipeline.memory</a></li>
+    <li class="api apilevel-">
+  <a href="../../../../com/facebook/imagepipeline/multiuri/package-summary.html">com.facebook.imagepipeline.multiuri</a></li>
     <li class="api apilevel-">
   <a href="../../../../com/facebook/imagepipeline/nativecode/package-summary.html">com.facebook.imagepipeline.nativecode</a></li>
     <li class="api apilevel-">
@@ -321,6 +331,7 @@
               
     <li><h2>Classes</h2>
       <ul>
+          <li class="api apilevel-"><a href="../../../../com/facebook/imagepipeline/core/CloseableReferenceFactory.html">CloseableReferenceFactory</a></li>
           <li class="api apilevel-"><a href="../../../../com/facebook/imagepipeline/core/DefaultExecutorSupplier.html">DefaultExecutorSupplier</a></li>
           <li class="api apilevel-"><a href="../../../../com/facebook/imagepipeline/core/DiskStorageCacheFactory.html">DiskStorageCacheFactory</a></li>
           <li class="api apilevel-"><a href="../../../../com/facebook/imagepipeline/core/DynamicDefaultDiskStorageFactory.html">DynamicDefaultDiskStorageFactory</a></li>
@@ -332,6 +343,7 @@
           <li class="api apilevel-"><a href="../../../../com/facebook/imagepipeline/core/ImagePipelineExperiments.Builder.html">ImagePipelineExperiments.Builder</a></li>
           <li class="api apilevel-"><a href="../../../../com/facebook/imagepipeline/core/ImagePipelineExperiments.DefaultProducerFactoryMethod.html">ImagePipelineExperiments.DefaultProducerFactoryMethod</a></li>
           <li class="api apilevel-"><a href="../../../../com/facebook/imagepipeline/core/ImagePipelineFactory.html">ImagePipelineFactory</a></li>
+          <li class="api apilevel-"><a href="../../../../com/facebook/imagepipeline/core/NativeCodeSetup.html">NativeCodeSetup</a></li>
           <li class="api apilevel-"><a href="../../../../com/facebook/imagepipeline/core/PriorityThreadFactory.html">PriorityThreadFactory</a></li>
           <li class="api apilevel-"><a href="../../../../com/facebook/imagepipeline/core/ProducerFactory.html">ProducerFactory</a></li>
           <li class="api apilevel-"><a href="../../../../com/facebook/imagepipeline/core/ProducerSequenceFactory.html">ProducerSequenceFactory</a></li>
@@ -648,6 +660,38 @@ Summary:
             <a href="../../../../com/facebook/imagepipeline/core/ImagePipelineConfig.Builder.html">ImagePipelineConfig.Builder</a>
         </td>
         <td class="jd-linkcol" width="100%">
+        <span class="sympad"><a href="../../../../com/facebook/imagepipeline/core/ImagePipelineConfig.Builder.html#setBitmapMemoryCache(com.facebook.imagepipeline.cache.MemoryCache<com.facebook.cache.common.CacheKey, com.facebook.imagepipeline.image.CloseableImage>)">setBitmapMemoryCache</a></span>(<a href="../../../../com/facebook/imagepipeline/cache/MemoryCache.html">MemoryCache</a>&lt;<a href="../../../../com/facebook/cache/common/CacheKey.html">CacheKey</a>,&nbsp;<a href="../../../../com/facebook/imagepipeline/image/CloseableImage.html">CloseableImage</a>&gt; bitmapMemoryCache)
+        
+  </td></tr>
+
+
+	 
+    <tr class=" api apilevel-" >
+        <td class="jd-typecol">
+            
+            
+            
+            
+            
+            <a href="../../../../com/facebook/imagepipeline/core/ImagePipelineConfig.Builder.html">ImagePipelineConfig.Builder</a>
+        </td>
+        <td class="jd-linkcol" width="100%">
+        <span class="sympad"><a href="../../../../com/facebook/imagepipeline/core/ImagePipelineConfig.Builder.html#setBitmapMemoryCacheEntryStateObserver(com.facebook.imagepipeline.cache.CountingMemoryCache.EntryStateObserver<com.facebook.cache.common.CacheKey>)">setBitmapMemoryCacheEntryStateObserver</a></span>(<a href="../../../../com/facebook/imagepipeline/cache/CountingMemoryCache.EntryStateObserver.html">EntryStateObserver</a>&lt;<a href="../../../../com/facebook/cache/common/CacheKey.html">CacheKey</a>&gt; bitmapMemoryCacheEntryStateObserver)
+        
+  </td></tr>
+
+
+	 
+    <tr class="alt-color api apilevel-" >
+        <td class="jd-typecol">
+            
+            
+            
+            
+            
+            <a href="../../../../com/facebook/imagepipeline/core/ImagePipelineConfig.Builder.html">ImagePipelineConfig.Builder</a>
+        </td>
+        <td class="jd-linkcol" width="100%">
         <span class="sympad"><a href="../../../../com/facebook/imagepipeline/core/ImagePipelineConfig.Builder.html#setBitmapMemoryCacheParamsSupplier(com.facebook.common.internal.Supplier<com.facebook.imagepipeline.cache.MemoryCacheParams>)">setBitmapMemoryCacheParamsSupplier</a></span>(<a href="../../../../com/facebook/common/internal/Supplier.html">Supplier</a>&lt;<a href="../../../../com/facebook/imagepipeline/cache/MemoryCacheParams.html">MemoryCacheParams</a>&gt; bitmapMemoryCacheParamsSupplier)
         
   </td></tr>
@@ -664,7 +708,7 @@ Summary:
             <a href="../../../../com/facebook/imagepipeline/core/ImagePipelineConfig.Builder.html">ImagePipelineConfig.Builder</a>
         </td>
         <td class="jd-linkcol" width="100%">
-        <span class="sympad"><a href="../../../../com/facebook/imagepipeline/core/ImagePipelineConfig.Builder.html#setBitmapMemoryCacheTrimStrategy(com.facebook.imagepipeline.cache.CountingMemoryCache.CacheTrimStrategy)">setBitmapMemoryCacheTrimStrategy</a></span>(<a href="../../../../com/facebook/imagepipeline/cache/CountingMemoryCache.CacheTrimStrategy.html">CountingMemoryCache.CacheTrimStrategy</a> trimStrategy)
+        <span class="sympad"><a href="../../../../com/facebook/imagepipeline/core/ImagePipelineConfig.Builder.html#setBitmapMemoryCacheTrimStrategy(com.facebook.imagepipeline.cache.MemoryCache.CacheTrimStrategy)">setBitmapMemoryCacheTrimStrategy</a></span>(<a href="../../../../com/facebook/imagepipeline/cache/MemoryCache.CacheTrimStrategy.html">MemoryCache.CacheTrimStrategy</a> trimStrategy)
         
   </td></tr>
 
@@ -712,6 +756,38 @@ Summary:
             <a href="../../../../com/facebook/imagepipeline/core/ImagePipelineConfig.Builder.html">ImagePipelineConfig.Builder</a>
         </td>
         <td class="jd-linkcol" width="100%">
+        <span class="sympad"><a href="../../../../com/facebook/imagepipeline/core/ImagePipelineConfig.Builder.html#setCallerContextVerifier(com.facebook.callercontext.CallerContextVerifier)">setCallerContextVerifier</a></span>(<a href="../../../../com/facebook/callercontext/CallerContextVerifier.html">CallerContextVerifier</a> callerContextVerifier)
+        
+  </td></tr>
+
+
+	 
+    <tr class=" api apilevel-" >
+        <td class="jd-typecol">
+            
+            
+            
+            
+            
+            <a href="../../../../com/facebook/imagepipeline/core/ImagePipelineConfig.Builder.html">ImagePipelineConfig.Builder</a>
+        </td>
+        <td class="jd-linkcol" width="100%">
+        <span class="sympad"><a href="../../../../com/facebook/imagepipeline/core/ImagePipelineConfig.Builder.html#setCloseableReferenceLeakTracker(com.facebook.imagepipeline.debug.CloseableReferenceLeakTracker)">setCloseableReferenceLeakTracker</a></span>(<a href="../../../../com/facebook/imagepipeline/debug/CloseableReferenceLeakTracker.html">CloseableReferenceLeakTracker</a> closeableReferenceLeakTracker)
+        
+  </td></tr>
+
+
+	 
+    <tr class="alt-color api apilevel-" >
+        <td class="jd-typecol">
+            
+            
+            
+            
+            
+            <a href="../../../../com/facebook/imagepipeline/core/ImagePipelineConfig.Builder.html">ImagePipelineConfig.Builder</a>
+        </td>
+        <td class="jd-linkcol" width="100%">
         <span class="sympad"><a href="../../../../com/facebook/imagepipeline/core/ImagePipelineConfig.Builder.html#setDiskCacheEnabled(boolean)">setDiskCacheEnabled</a></span>(boolean diskCacheEnabled)
         
   </td></tr>
@@ -744,13 +820,29 @@ Summary:
             <a href="../../../../com/facebook/imagepipeline/core/ImagePipelineConfig.Builder.html">ImagePipelineConfig.Builder</a>
         </td>
         <td class="jd-linkcol" width="100%">
-        <span class="sympad"><a href="../../../../com/facebook/imagepipeline/core/ImagePipelineConfig.Builder.html#setEncodedMemoryCacheParamsSupplier(com.facebook.common.internal.Supplier<com.facebook.imagepipeline.cache.MemoryCacheParams>)">setEncodedMemoryCacheParamsSupplier</a></span>(<a href="../../../../com/facebook/common/internal/Supplier.html">Supplier</a>&lt;<a href="../../../../com/facebook/imagepipeline/cache/MemoryCacheParams.html">MemoryCacheParams</a>&gt; encodedMemoryCacheParamsSupplier)
+        <span class="sympad"><a href="../../../../com/facebook/imagepipeline/core/ImagePipelineConfig.Builder.html#setEncodedMemoryCache(com.facebook.imagepipeline.cache.MemoryCache<com.facebook.cache.common.CacheKey, com.facebook.common.memory.PooledByteBuffer>)">setEncodedMemoryCache</a></span>(<a href="../../../../com/facebook/imagepipeline/cache/MemoryCache.html">MemoryCache</a>&lt;<a href="../../../../com/facebook/cache/common/CacheKey.html">CacheKey</a>,&nbsp;<a href="../../../../com/facebook/common/memory/PooledByteBuffer.html">PooledByteBuffer</a>&gt; encodedMemoryCache)
         
   </td></tr>
 
 
 	 
     <tr class=" api apilevel-" >
+        <td class="jd-typecol">
+            
+            
+            
+            
+            
+            <a href="../../../../com/facebook/imagepipeline/core/ImagePipelineConfig.Builder.html">ImagePipelineConfig.Builder</a>
+        </td>
+        <td class="jd-linkcol" width="100%">
+        <span class="sympad"><a href="../../../../com/facebook/imagepipeline/core/ImagePipelineConfig.Builder.html#setEncodedMemoryCacheParamsSupplier(com.facebook.common.internal.Supplier<com.facebook.imagepipeline.cache.MemoryCacheParams>)">setEncodedMemoryCacheParamsSupplier</a></span>(<a href="../../../../com/facebook/common/internal/Supplier.html">Supplier</a>&lt;<a href="../../../../com/facebook/imagepipeline/cache/MemoryCacheParams.html">MemoryCacheParams</a>&gt; encodedMemoryCacheParamsSupplier)
+        
+  </td></tr>
+
+
+	 
+    <tr class="alt-color api apilevel-" >
         <td class="jd-typecol">
             
             
@@ -766,7 +858,7 @@ Summary:
 
 
 	 
-    <tr class="alt-color api apilevel-" >
+    <tr class=" api apilevel-" >
         <td class="jd-typecol">
             
             
@@ -782,7 +874,7 @@ Summary:
 
 
 	 
-    <tr class=" api apilevel-" >
+    <tr class="alt-color api apilevel-" >
         <td class="jd-typecol">
             
             
@@ -798,7 +890,7 @@ Summary:
 
 
 	 
-    <tr class="alt-color api apilevel-" >
+    <tr class=" api apilevel-" >
         <td class="jd-typecol">
             
             
@@ -814,7 +906,7 @@ Summary:
 
 
 	 
-    <tr class=" api apilevel-" >
+    <tr class="alt-color api apilevel-" >
         <td class="jd-typecol">
             
             
@@ -830,7 +922,7 @@ Summary:
 
 
 	 
-    <tr class="alt-color api apilevel-" >
+    <tr class=" api apilevel-" >
         <td class="jd-typecol">
             
             
@@ -846,7 +938,7 @@ Summary:
 
 
 	 
-    <tr class=" api apilevel-" >
+    <tr class="alt-color api apilevel-" >
         <td class="jd-typecol">
             
             
@@ -862,7 +954,7 @@ Summary:
 
 
 	 
-    <tr class="alt-color api apilevel-" >
+    <tr class=" api apilevel-" >
         <td class="jd-typecol">
             
             
@@ -878,7 +970,7 @@ Summary:
 
 
 	 
-    <tr class=" api apilevel-" >
+    <tr class="alt-color api apilevel-" >
         <td class="jd-typecol">
             
             
@@ -894,7 +986,7 @@ Summary:
 
 
 	 
-    <tr class="alt-color api apilevel-" >
+    <tr class=" api apilevel-" >
         <td class="jd-typecol">
             
             
@@ -910,7 +1002,7 @@ Summary:
 
 
 	 
-    <tr class=" api apilevel-" >
+    <tr class="alt-color api apilevel-" >
         <td class="jd-typecol">
             
             
@@ -926,7 +1018,7 @@ Summary:
 
 
 	 
-    <tr class="alt-color api apilevel-" >
+    <tr class=" api apilevel-" >
         <td class="jd-typecol">
             
             
@@ -942,7 +1034,7 @@ Summary:
 
 
 	 
-    <tr class=" api apilevel-" >
+    <tr class="alt-color api apilevel-" >
         <td class="jd-typecol">
             
             
@@ -958,7 +1050,7 @@ Summary:
 
 
 	 
-    <tr class="alt-color api apilevel-" >
+    <tr class=" api apilevel-" >
         <td class="jd-typecol">
             
             
@@ -974,7 +1066,7 @@ Summary:
 
 
 	 
-    <tr class=" api apilevel-" >
+    <tr class="alt-color api apilevel-" >
         <td class="jd-typecol">
             
             
@@ -990,7 +1082,7 @@ Summary:
 
 
 	 
-    <tr class="alt-color api apilevel-" >
+    <tr class=" api apilevel-" >
         <td class="jd-typecol">
             
             
@@ -1001,6 +1093,22 @@ Summary:
         </td>
         <td class="jd-linkcol" width="100%">
         <span class="sympad"><a href="../../../../com/facebook/imagepipeline/core/ImagePipelineConfig.Builder.html#setProgressiveJpegConfig(com.facebook.imagepipeline.decoder.ProgressiveJpegConfig)">setProgressiveJpegConfig</a></span>(<a href="../../../../com/facebook/imagepipeline/decoder/ProgressiveJpegConfig.html">ProgressiveJpegConfig</a> progressiveJpegConfig)
+        
+  </td></tr>
+
+
+	 
+    <tr class="alt-color api apilevel-" >
+        <td class="jd-typecol">
+            
+            
+            
+            
+            
+            <a href="../../../../com/facebook/imagepipeline/core/ImagePipelineConfig.Builder.html">ImagePipelineConfig.Builder</a>
+        </td>
+        <td class="jd-linkcol" width="100%">
+        <span class="sympad"><a href="../../../../com/facebook/imagepipeline/core/ImagePipelineConfig.Builder.html#setRequestListener2s(java.util.Set<com.facebook.imagepipeline.listener.RequestListener2>)">setRequestListener2s</a></span>(Set&lt;<a href="../../../../com/facebook/imagepipeline/listener/RequestListener2.html">RequestListener2</a>&gt; requestListeners)
         
   </td></tr>
 
@@ -1497,6 +1605,68 @@ From class
 </div>
 
 
+<a id="setBitmapMemoryCache(com.facebook.imagepipeline.cache.MemoryCache<com.facebook.cache.common.CacheKey, com.facebook.imagepipeline.image.CloseableImage>)"></a>
+
+<div class="jd-details api apilevel-"> 
+    <h4 class="jd-details-title">
+      <span class="normal">
+        public 
+         
+         
+         
+         
+        <a href="../../../../com/facebook/imagepipeline/core/ImagePipelineConfig.Builder.html">ImagePipelineConfig.Builder</a>
+      </span>
+      <span class="sympad">setBitmapMemoryCache</span>
+      <span class="normal">(<a href="../../../../com/facebook/imagepipeline/cache/MemoryCache.html">MemoryCache</a>&lt;<a href="../../../../com/facebook/cache/common/CacheKey.html">CacheKey</a>,&nbsp;<a href="../../../../com/facebook/imagepipeline/image/CloseableImage.html">CloseableImage</a>&gt; bitmapMemoryCache)</span>
+    </h4>
+      <div class="api-level">
+        <div>
+
+</div>
+        
+  
+
+      </div>
+    <div class="jd-details-descr">
+      
+  <div class="jd-tagdata jd-tagdescr"><p></p></div>
+
+    </div>
+</div>
+
+
+<a id="setBitmapMemoryCacheEntryStateObserver(com.facebook.imagepipeline.cache.CountingMemoryCache.EntryStateObserver<com.facebook.cache.common.CacheKey>)"></a>
+
+<div class="jd-details api apilevel-"> 
+    <h4 class="jd-details-title">
+      <span class="normal">
+        public 
+         
+         
+         
+         
+        <a href="../../../../com/facebook/imagepipeline/core/ImagePipelineConfig.Builder.html">ImagePipelineConfig.Builder</a>
+      </span>
+      <span class="sympad">setBitmapMemoryCacheEntryStateObserver</span>
+      <span class="normal">(<a href="../../../../com/facebook/imagepipeline/cache/CountingMemoryCache.EntryStateObserver.html">EntryStateObserver</a>&lt;<a href="../../../../com/facebook/cache/common/CacheKey.html">CacheKey</a>&gt; bitmapMemoryCacheEntryStateObserver)</span>
+    </h4>
+      <div class="api-level">
+        <div>
+
+</div>
+        
+  
+
+      </div>
+    <div class="jd-details-descr">
+      
+  <div class="jd-tagdata jd-tagdescr"><p></p></div>
+
+    </div>
+</div>
+
+
 <a id="setBitmapMemoryCacheParamsSupplier(com.facebook.common.internal.Supplier<com.facebook.imagepipeline.cache.MemoryCacheParams>)"></a>
 
 <div class="jd-details api apilevel-"> 
@@ -1528,7 +1698,7 @@ From class
 </div>
 
 
-<a id="setBitmapMemoryCacheTrimStrategy(com.facebook.imagepipeline.cache.CountingMemoryCache.CacheTrimStrategy)"></a>
+<a id="setBitmapMemoryCacheTrimStrategy(com.facebook.imagepipeline.cache.MemoryCache.CacheTrimStrategy)"></a>
 
 <div class="jd-details api apilevel-"> 
     <h4 class="jd-details-title">
@@ -1541,7 +1711,7 @@ From class
         <a href="../../../../com/facebook/imagepipeline/core/ImagePipelineConfig.Builder.html">ImagePipelineConfig.Builder</a>
       </span>
       <span class="sympad">setBitmapMemoryCacheTrimStrategy</span>
-      <span class="normal">(<a href="../../../../com/facebook/imagepipeline/cache/CountingMemoryCache.CacheTrimStrategy.html">CountingMemoryCache.CacheTrimStrategy</a> trimStrategy)</span>
+      <span class="normal">(<a href="../../../../com/facebook/imagepipeline/cache/MemoryCache.CacheTrimStrategy.html">MemoryCache.CacheTrimStrategy</a> trimStrategy)</span>
     </h4>
       <div class="api-level">
         <div>
@@ -1621,6 +1791,68 @@ From class
 </div>
 
 
+<a id="setCallerContextVerifier(com.facebook.callercontext.CallerContextVerifier)"></a>
+
+<div class="jd-details api apilevel-"> 
+    <h4 class="jd-details-title">
+      <span class="normal">
+        public 
+         
+         
+         
+         
+        <a href="../../../../com/facebook/imagepipeline/core/ImagePipelineConfig.Builder.html">ImagePipelineConfig.Builder</a>
+      </span>
+      <span class="sympad">setCallerContextVerifier</span>
+      <span class="normal">(<a href="../../../../com/facebook/callercontext/CallerContextVerifier.html">CallerContextVerifier</a> callerContextVerifier)</span>
+    </h4>
+      <div class="api-level">
+        <div>
+
+</div>
+        
+  
+
+      </div>
+    <div class="jd-details-descr">
+      
+  <div class="jd-tagdata jd-tagdescr"><p></p></div>
+
+    </div>
+</div>
+
+
+<a id="setCloseableReferenceLeakTracker(com.facebook.imagepipeline.debug.CloseableReferenceLeakTracker)"></a>
+
+<div class="jd-details api apilevel-"> 
+    <h4 class="jd-details-title">
+      <span class="normal">
+        public 
+         
+         
+         
+         
+        <a href="../../../../com/facebook/imagepipeline/core/ImagePipelineConfig.Builder.html">ImagePipelineConfig.Builder</a>
+      </span>
+      <span class="sympad">setCloseableReferenceLeakTracker</span>
+      <span class="normal">(<a href="../../../../com/facebook/imagepipeline/debug/CloseableReferenceLeakTracker.html">CloseableReferenceLeakTracker</a> closeableReferenceLeakTracker)</span>
+    </h4>
+      <div class="api-level">
+        <div>
+
+</div>
+        
+  
+
+      </div>
+    <div class="jd-details-descr">
+      
+  <div class="jd-tagdata jd-tagdescr"><p></p></div>
+
+    </div>
+</div>
+
+
 <a id="setDiskCacheEnabled(boolean)"></a>
 
 <div class="jd-details api apilevel-"> 
@@ -1666,6 +1898,37 @@ From class
       </span>
       <span class="sympad">setDownsampleEnabled</span>
       <span class="normal">(boolean downsampleEnabled)</span>
+    </h4>
+      <div class="api-level">
+        <div>
+
+</div>
+        
+  
+
+      </div>
+    <div class="jd-details-descr">
+      
+  <div class="jd-tagdata jd-tagdescr"><p></p></div>
+
+    </div>
+</div>
+
+
+<a id="setEncodedMemoryCache(com.facebook.imagepipeline.cache.MemoryCache<com.facebook.cache.common.CacheKey, com.facebook.common.memory.PooledByteBuffer>)"></a>
+
+<div class="jd-details api apilevel-"> 
+    <h4 class="jd-details-title">
+      <span class="normal">
+        public 
+         
+         
+         
+         
+        <a href="../../../../com/facebook/imagepipeline/core/ImagePipelineConfig.Builder.html">ImagePipelineConfig.Builder</a>
+      </span>
+      <span class="sympad">setEncodedMemoryCache</span>
+      <span class="normal">(<a href="../../../../com/facebook/imagepipeline/cache/MemoryCache.html">MemoryCache</a>&lt;<a href="../../../../com/facebook/cache/common/CacheKey.html">CacheKey</a>,&nbsp;<a href="../../../../com/facebook/common/memory/PooledByteBuffer.html">PooledByteBuffer</a>&gt; encodedMemoryCache)</span>
     </h4>
       <div class="api-level">
         <div>
@@ -2193,6 +2456,37 @@ From class
       </span>
       <span class="sympad">setProgressiveJpegConfig</span>
       <span class="normal">(<a href="../../../../com/facebook/imagepipeline/decoder/ProgressiveJpegConfig.html">ProgressiveJpegConfig</a> progressiveJpegConfig)</span>
+    </h4>
+      <div class="api-level">
+        <div>
+
+</div>
+        
+  
+
+      </div>
+    <div class="jd-details-descr">
+      
+  <div class="jd-tagdata jd-tagdescr"><p></p></div>
+
+    </div>
+</div>
+
+
+<a id="setRequestListener2s(java.util.Set<com.facebook.imagepipeline.listener.RequestListener2>)"></a>
+
+<div class="jd-details api apilevel-"> 
+    <h4 class="jd-details-title">
+      <span class="normal">
+        public 
+         
+         
+         
+         
+        <a href="../../../../com/facebook/imagepipeline/core/ImagePipelineConfig.Builder.html">ImagePipelineConfig.Builder</a>
+      </span>
+      <span class="sympad">setRequestListener2s</span>
+      <span class="normal">(Set&lt;<a href="../../../../com/facebook/imagepipeline/listener/RequestListener2.html">RequestListener2</a>&gt; requestListeners)</span>
     </h4>
       <div class="api-level">
         <div>

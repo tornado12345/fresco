@@ -4,6 +4,7 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
+
 package com.facebook.imagepipeline.producers;
 
 import static com.facebook.imageformat.DefaultImageFormats.HEIF;
@@ -12,9 +13,9 @@ import static com.facebook.imagepipeline.transcoder.JpegTranscoderUtils.DEFAULT_
 import static com.facebook.imagepipeline.transcoder.JpegTranscoderUtils.INVERTED_EXIF_ORIENTATIONS;
 
 import android.media.ExifInterface;
+import androidx.annotation.VisibleForTesting;
 import com.facebook.common.internal.ImmutableMap;
 import com.facebook.common.internal.Preconditions;
-import com.facebook.common.internal.VisibleForTesting;
 import com.facebook.common.memory.PooledByteBuffer;
 import com.facebook.common.memory.PooledByteBufferFactory;
 import com.facebook.common.memory.PooledByteBufferOutputStream;
@@ -72,9 +73,7 @@ public class ResizeAndRotateProducer implements Producer<EncodedImage> {
   }
 
   @Override
-  public void produceResults(
-      final Consumer<EncodedImage> consumer,
-      final ProducerContext context) {
+  public void produceResults(final Consumer<EncodedImage> consumer, final ProducerContext context) {
     mInputProducer.produceResults(
         new TransformingConsumer(consumer, context, mIsResizingEnabled, mImageTranscoderFactory),
         context);
@@ -207,7 +206,6 @@ public class ResizeAndRotateProducer implements Producer<EncodedImage> {
     private @Nullable EncodedImage getCloneWithRotationApplied(
         EncodedImage encodedImage, int angle) {
       EncodedImage newResult = EncodedImage.cloneOrNull(encodedImage); // for thread-safety sake
-      encodedImage.close();
       if (newResult != null) {
         newResult.setRotationAngle(angle);
       }
@@ -216,7 +214,7 @@ public class ResizeAndRotateProducer implements Producer<EncodedImage> {
 
     private void doTransform(
         EncodedImage encodedImage, @Status int status, ImageTranscoder imageTranscoder) {
-      mProducerContext.getListener().onProducerStart(mProducerContext.getId(), PRODUCER_NAME);
+      mProducerContext.getProducerListener().onProducerStart(mProducerContext, PRODUCER_NAME);
       ImageRequest imageRequest = mProducerContext.getImageRequest();
       PooledByteBufferOutputStream outputStream = mPooledByteBufferFactory.newOutputStream();
       Map<String, String> extraMap = null;
@@ -249,8 +247,9 @@ public class ResizeAndRotateProducer implements Producer<EncodedImage> {
           ret.setImageFormat(JPEG);
           try {
             ret.parseMetaData();
-            mProducerContext.getListener().
-                onProducerFinishWithSuccess(mProducerContext.getId(), PRODUCER_NAME, extraMap);
+            mProducerContext
+                .getProducerListener()
+                .onProducerFinishWithSuccess(mProducerContext, PRODUCER_NAME, extraMap);
             if (result.getTranscodeStatus() != TranscodeStatus.TRANSCODING_NO_RESIZING) {
               status |= Consumer.IS_RESIZING_DONE;
             }
@@ -262,8 +261,9 @@ public class ResizeAndRotateProducer implements Producer<EncodedImage> {
           CloseableReference.closeSafely(ref);
         }
       } catch (Exception e) {
-        mProducerContext.getListener().
-            onProducerFinishWithFailure(mProducerContext.getId(), PRODUCER_NAME, e, extraMap);
+        mProducerContext
+            .getProducerListener()
+            .onProducerFinishWithFailure(mProducerContext, PRODUCER_NAME, e, extraMap);
         if (isLast(status)) {
           getConsumer().onFailure(e);
         }
@@ -278,7 +278,9 @@ public class ResizeAndRotateProducer implements Producer<EncodedImage> {
         @Nullable ResizeOptions resizeOptions,
         @Nullable ImageTranscodeResult transcodeResult,
         @Nullable String transcoderId) {
-      if (!mProducerContext.getListener().requiresExtraMap(mProducerContext.getId())) {
+      if (!mProducerContext
+          .getProducerListener()
+          .requiresExtraMap(mProducerContext, PRODUCER_NAME)) {
         return null;
       }
       String originalSize = encodedImage.getWidth() + "x" + encodedImage.getHeight();
@@ -302,9 +304,7 @@ public class ResizeAndRotateProducer implements Producer<EncodedImage> {
   }
 
   private static TriState shouldTransform(
-      ImageRequest request,
-      EncodedImage encodedImage,
-      ImageTranscoder imageTranscoder) {
+      ImageRequest request, EncodedImage encodedImage, ImageTranscoder imageTranscoder) {
     if (encodedImage == null || encodedImage.getImageFormat() == ImageFormat.UNKNOWN) {
       return TriState.UNSET;
     }

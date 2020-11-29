@@ -1,14 +1,10 @@
 /*
- * This file provided by Facebook is for non-commercial testing and evaluation
- * purposes only.  Facebook reserves all rights not expressly granted.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- * FACEBOOK BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
  */
+
 package com.facebook.fresco.samples.showcase.imagepipeline;
 
 import android.net.Uri;
@@ -71,16 +67,13 @@ public class ImagePipelineResizingFragment extends BaseShowcaseFragment {
   @Nullable
   @Override
   public View onCreateView(
-      LayoutInflater inflater,
-      @Nullable ViewGroup container,
-      @Nullable Bundle savedInstanceState) {
+      LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
     return inflater.inflate(R.layout.fragment_imagepipeline_resizing, container, false);
   }
 
   @Override
   public void onViewCreated(final View view, @Nullable Bundle savedInstanceState) {
-    final ImageUriProvider imageUriProvider = ImageUriProvider.getInstance(getContext());
-    setupImageFormatEntries(imageUriProvider);
+    setupImageFormatEntries(sampleUris());
 
     mButton = (Button) view.findViewById(R.id.button);
     mDraweeMain = (SimpleDraweeView) view.findViewById(R.id.drawee_view);
@@ -166,11 +159,6 @@ public class ImagePipelineResizingFragment extends BaseShowcaseFragment {
         };
   }
 
-  @Override
-  public int getTitleId() {
-    return R.string.imagepipeline_resizing_title;
-  }
-
   private void reloadImage() {
     reloadImage(
         mImageFormatEntries[mFormatSpinner.getSelectedItemPosition()].uri,
@@ -181,13 +169,14 @@ public class ImagePipelineResizingFragment extends BaseShowcaseFragment {
     final ImageRequest imageRequest =
         ImageRequestBuilder.newBuilderWithSource(imageUri)
             .setResizeOptions(resizeOptions)
-            .setImageDecodeOptions(new ImageDecodeOptionsBuilder().setTransformToSRGB(true).build())
+            .setImageDecodeOptions(new ImageDecodeOptionsBuilder().build())
             .build();
 
-    final DraweeController draweeController = Fresco.newDraweeControllerBuilder()
-        .setOldController(mDraweeMain.getController())
-        .setImageRequest(imageRequest)
-        .build();
+    final DraweeController draweeController =
+        Fresco.newDraweeControllerBuilder()
+            .setOldController(mDraweeMain.getController())
+            .setImageRequest(imageRequest)
+            .build();
 
     mDraweeMain.setController(draweeController);
   }
@@ -213,9 +202,11 @@ public class ImagePipelineResizingFragment extends BaseShowcaseFragment {
     public View getView(int position, View convertView, ViewGroup parent) {
       final LayoutInflater layoutInflater = getLayoutInflater();
 
-      final View view = convertView != null
-          ? convertView
-          : layoutInflater.inflate(android.R.layout.simple_spinner_dropdown_item, parent, false);
+      final View view =
+          convertView != null
+              ? convertView
+              : layoutInflater.inflate(
+                  android.R.layout.simple_spinner_dropdown_item, parent, false);
 
       final TextView textView = (TextView) view.findViewById(android.R.id.text1);
       textView.setText(SPINNER_ENTRIES_SIZE[position].toString());

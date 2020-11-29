@@ -4,6 +4,7 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
+
 package com.facebook.drawee.backends.pipeline.info.internal;
 
 import com.facebook.drawee.backends.pipeline.info.ImageLoadStatus;
@@ -24,8 +25,13 @@ public class ImagePerfImageOriginListener implements ImageOriginListener {
   }
 
   @Override
-  public void onImageLoaded(String controllerId, @ImageOrigin int imageOrigin, boolean successful) {
+  public void onImageLoaded(
+      String controllerId,
+      @ImageOrigin int imageOrigin,
+      boolean successful,
+      String ultimateProducerName) {
     mImagePerfState.setImageOrigin(imageOrigin);
+    mImagePerfState.setUltimateProducerName(ultimateProducerName);
     mImagePerfMonitor.notifyStatusUpdated(mImagePerfState, ImageLoadStatus.ORIGIN_AVAILABLE);
   }
 }

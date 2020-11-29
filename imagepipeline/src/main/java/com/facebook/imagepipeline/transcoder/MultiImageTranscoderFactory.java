@@ -1,13 +1,17 @@
-/* Copyright (c) Facebook, Inc. and its affiliates.
+/*
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
+
 package com.facebook.imagepipeline.transcoder;
 
 import com.facebook.imageformat.ImageFormat;
 import com.facebook.imagepipeline.core.ImageTranscoderType;
+import com.facebook.imagepipeline.core.NativeCodeSetup;
 import com.facebook.imagepipeline.nativecode.NativeImageTranscoderFactory;
+import com.facebook.infer.annotation.Nullsafe;
 import javax.annotation.Nullable;
 
 /**
@@ -16,22 +20,26 @@ import javax.annotation.Nullable;
  * supported, the first fallback is NativeJpegTranscoder, otherwise {@link SimpleImageTranscoder} is
  * used.
  */
+@Nullsafe(Nullsafe.Mode.STRICT)
 public class MultiImageTranscoderFactory implements ImageTranscoderFactory {
 
   private final int mMaxBitmapSize;
   private final boolean mUseDownSamplingRatio;
   @Nullable private final ImageTranscoderFactory mPrimaryImageTranscoderFactory;
   @Nullable @ImageTranscoderType private final Integer mImageTranscoderType;
+  private final boolean mEnsureTranscoderLibraryLoaded;
 
   public MultiImageTranscoderFactory(
       final int maxBitmapSize,
       final boolean useDownSamplingRatio,
       @Nullable final ImageTranscoderFactory primaryImageTranscoderFactory,
-      @Nullable @ImageTranscoderType final Integer imageTranscoderType) {
+      @Nullable @ImageTranscoderType final Integer imageTranscoderType,
+      final boolean ensureTranscoderLibraryLoaded) {
     mMaxBitmapSize = maxBitmapSize;
     mUseDownSamplingRatio = useDownSamplingRatio;
     mPrimaryImageTranscoderFactory = primaryImageTranscoderFactory;
     mImageTranscoderType = imageTranscoderType;
+    mEnsureTranscoderLibraryLoaded = ensureTranscoderLibraryLoaded;
   }
 
   @Override
@@ -43,7 +51,7 @@ public class MultiImageTranscoderFactory implements ImageTranscoderFactory {
       imageTranscoder = getImageTranscoderWithType(imageFormat, isResizingEnabled);
     }
     // First fallback using native ImageTranscoder
-    if (imageTranscoder == null) {
+    if (imageTranscoder == null && NativeCodeSetup.getUseNativeCode()) {
       imageTranscoder = getNativeImageTranscoder(imageFormat, isResizingEnabled);
     }
 
@@ -66,7 +74,7 @@ public class MultiImageTranscoderFactory implements ImageTranscoderFactory {
   private ImageTranscoder getNativeImageTranscoder(
       ImageFormat imageFormat, boolean isResizingEnabled) {
     return NativeImageTranscoderFactory.getNativeImageTranscoderFactory(
-            mMaxBitmapSize, mUseDownSamplingRatio)
+            mMaxBitmapSize, mUseDownSamplingRatio, mEnsureTranscoderLibraryLoaded)
         .createImageTranscoder(imageFormat, isResizingEnabled);
   }
 

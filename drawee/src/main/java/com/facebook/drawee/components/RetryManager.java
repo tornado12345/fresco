@@ -7,9 +7,10 @@
 
 package com.facebook.drawee.components;
 
-/**
- * Manages retries for an image.
- */
+import com.facebook.infer.annotation.Nullsafe;
+
+/** Manages retries for an image. */
+@Nullsafe(Nullsafe.Mode.STRICT)
 public class RetryManager {
   private static final int MAX_TAP_TO_RETRY_ATTEMPTS = 4;
 
@@ -25,19 +26,14 @@ public class RetryManager {
     return new RetryManager();
   }
 
-  /**
-   * Initializes component to its initial state.
-   */
+  /** Initializes component to its initial state. */
   public void init() {
     mTapToRetryEnabled = false;
     mMaxTapToRetryAttempts = MAX_TAP_TO_RETRY_ATTEMPTS;
     reset();
   }
 
-  /**
-   * Resets component.
-   * This will reset the number of attempts.
-   */
+  /** Resets component. This will reset the number of attempts. */
   public void reset() {
     mTapToRetryAttempts = 0;
   }

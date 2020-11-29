@@ -18,11 +18,9 @@ import org.junit.runner.*;
 import org.mockito.*;
 import org.robolectric.*;
 
-/**
- * Basic tests for closeable bitmap
- */
+/** Basic tests for closeable bitmap */
 @RunWith(RobolectricTestRunner.class)
-public class CloseableBitmapTest  {
+public class CloseableBitmapTest {
 
   @Mock public Bitmap mBitmap;
   @Mock public ResourceReleaser<Bitmap> mResourceReleaser;

@@ -4,12 +4,17 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
+
 package com.facebook.imagepipeline.nativecode;
 
+import static com.facebook.soloader.nativeloader.NativeLoaderDelegate.SKIP_MERGED_JNI_ONLOAD;
+
 import android.os.Build;
-import com.facebook.soloader.SoLoader;
+import com.facebook.infer.annotation.Nullsafe;
+import com.facebook.soloader.nativeloader.NativeLoader;
 
 /** Single place responsible for ensuring that native-imagetranscoder.so is loaded */
+@Nullsafe(Nullsafe.Mode.STRICT)
 public class NativeJpegTranscoderSoLoader {
   private static boolean sInitialized;
 
@@ -20,12 +25,12 @@ public class NativeJpegTranscoderSoLoader {
       // library
       if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.JELLY_BEAN) {
         try {
-          SoLoader.loadLibrary("fb_jpegturbo");
+          NativeLoader.loadLibrary("fb_jpegturbo", SKIP_MERGED_JNI_ONLOAD);
         } catch (UnsatisfiedLinkError error) {
           // Head in the sand
         }
       }
-      SoLoader.loadLibrary("native-imagetranscoder");
+      NativeLoader.loadLibrary("native-imagetranscoder");
       sInitialized = true;
     }
   }

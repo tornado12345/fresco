@@ -4,6 +4,7 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
+
 package com.facebook.imagepipeline.nativecode;
 
 import static com.facebook.imagepipeline.transcoder.JpegTranscoderUtils.DEFAULT_JPEG_QUALITY;
@@ -15,10 +16,10 @@ import static com.facebook.imagepipeline.transcoder.JpegTranscoderUtils.MIN_SCAL
 import static com.facebook.imagepipeline.transcoder.JpegTranscoderUtils.SCALE_DENOMINATOR;
 
 import android.media.ExifInterface;
+import androidx.annotation.VisibleForTesting;
 import com.facebook.common.internal.Closeables;
 import com.facebook.common.internal.DoNotStrip;
 import com.facebook.common.internal.Preconditions;
-import com.facebook.common.internal.VisibleForTesting;
 import com.facebook.imageformat.DefaultImageFormats;
 import com.facebook.imageformat.ImageFormat;
 import com.facebook.imagepipeline.common.ResizeOptions;
@@ -43,15 +44,18 @@ public class NativeJpegTranscoder implements ImageTranscoder {
   private int mMaxBitmapSize;
   private boolean mUseDownsamplingRatio;
 
-  static {
-    NativeJpegTranscoderSoLoader.ensure();
-  }
-
   public NativeJpegTranscoder(
-      final boolean resizingEnabled, final int maxBitmapSize, final boolean useDownsamplingRatio) {
+      final boolean resizingEnabled,
+      final int maxBitmapSize,
+      final boolean useDownsamplingRatio,
+      final boolean ensureTranscoderLibraryLoaded) {
     mResizingEnabled = resizingEnabled;
     mMaxBitmapSize = maxBitmapSize;
     mUseDownsamplingRatio = useDownsamplingRatio;
+
+    if (ensureTranscoderLibraryLoaded) {
+      NativeJpegTranscoderSoLoader.ensure();
+    }
   }
 
   @Override

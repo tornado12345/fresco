@@ -12,20 +12,14 @@ import com.facebook.cache.common.CacheKey;
 import com.facebook.imagepipeline.request.ImageRequest;
 import javax.annotation.Nullable;
 
-/**
- * Factory methods for creating cache keys for the pipeline.
- */
+/** Factory methods for creating cache keys for the pipeline. */
 public interface CacheKeyFactory {
 
-  /**
-   * @return {@link CacheKey} for doing bitmap cache lookups in the pipeline.
-   */
-  CacheKey getBitmapCacheKey(ImageRequest request, Object callerContext);
+  /** @return {@link CacheKey} for doing bitmap cache lookups in the pipeline. */
+  CacheKey getBitmapCacheKey(ImageRequest request, @Nullable Object callerContext);
 
-  /**
-   * @return {@link CacheKey} for doing post-processed bitmap cache lookups in the pipeline.
-   */
-  CacheKey getPostprocessedBitmapCacheKey(ImageRequest request, Object callerContext);
+  /** @return {@link CacheKey} for doing post-processed bitmap cache lookups in the pipeline. */
+  CacheKey getPostprocessedBitmapCacheKey(ImageRequest request, @Nullable Object callerContext);
 
   /**
    * Creates a key to be used in the encoded memory and disk caches.

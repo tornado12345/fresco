@@ -12,6 +12,7 @@ import android.net.Uri;
 import com.facebook.cache.common.CacheKey;
 import com.facebook.common.internal.ImmutableList;
 import com.facebook.common.internal.Preconditions;
+import com.facebook.common.internal.Suppliers;
 import com.facebook.common.references.CloseableReference;
 import com.facebook.datasource.DataSource;
 import com.facebook.drawee.backends.pipeline.info.ImageOriginListener;
@@ -19,6 +20,7 @@ import com.facebook.drawee.backends.pipeline.info.ImagePerfDataListener;
 import com.facebook.drawee.controller.AbstractDraweeControllerBuilder;
 import com.facebook.drawee.controller.ControllerListener;
 import com.facebook.drawee.interfaces.DraweeController;
+import com.facebook.fresco.ui.common.ControllerListener2;
 import com.facebook.imagepipeline.cache.CacheKeyFactory;
 import com.facebook.imagepipeline.common.RotationOptions;
 import com.facebook.imagepipeline.core.ImagePipeline;
@@ -34,19 +36,20 @@ import javax.annotation.Nullable;
 
 /**
  * Concrete implementation of ImagePipeline Drawee controller builder.
- * <p/> See {@link AbstractDraweeControllerBuilder} for more details.
+ *
+ * <p>See {@link AbstractDraweeControllerBuilder} for more details.
  */
-public class PipelineDraweeControllerBuilder extends AbstractDraweeControllerBuilder<
-    PipelineDraweeControllerBuilder,
-    ImageRequest,
-    CloseableReference<CloseableImage>,
-    ImageInfo> {
+public class PipelineDraweeControllerBuilder
+    extends AbstractDraweeControllerBuilder<
+        PipelineDraweeControllerBuilder,
+        ImageRequest,
+        CloseableReference<CloseableImage>,
+        ImageInfo> {
 
   private final ImagePipeline mImagePipeline;
   private final PipelineDraweeControllerFactory mPipelineDraweeControllerFactory;
 
-  @Nullable
-  private ImmutableList<DrawableFactory> mCustomDrawableFactories;
+  @Nullable private ImmutableList<DrawableFactory> mCustomDrawableFactories;
   @Nullable private ImageOriginListener mImageOriginListener;
   @Nullable private ImagePerfDataListener mImagePerfDataListener;
 
@@ -54,8 +57,9 @@ public class PipelineDraweeControllerBuilder extends AbstractDraweeControllerBui
       Context context,
       PipelineDraweeControllerFactory pipelineDraweeControllerFactory,
       ImagePipeline imagePipeline,
-      Set<ControllerListener> boundControllerListeners) {
-    super(context, boundControllerListeners);
+      Set<ControllerListener> boundControllerListeners,
+      Set<ControllerListener2> boundControllerListeners2) {
+    super(context, boundControllerListeners, boundControllerListeners2);
     mImagePipeline = imagePipeline;
     mPipelineDraweeControllerFactory = pipelineDraweeControllerFactory;
   }
@@ -65,9 +69,10 @@ public class PipelineDraweeControllerBuilder extends AbstractDraweeControllerBui
     if (uri == null) {
       return super.setImageRequest(null);
     }
-    ImageRequest imageRequest = ImageRequestBuilder.newBuilderWithSource(uri)
-        .setRotationOptions(RotationOptions.autoRotateAtRenderTime())
-        .build();
+    ImageRequest imageRequest =
+        ImageRequestBuilder.newBuilderWithSource(uri)
+            .setRotationOptions(RotationOptions.autoRotateAtRenderTime())
+            .build();
     return super.setImageRequest(imageRequest);
   }
 
@@ -129,7 +134,8 @@ public class PipelineDraweeControllerBuilder extends AbstractDraweeControllerBui
           getCallerContext(),
           mCustomDrawableFactories,
           mImageOriginListener);
-      controller.initializePerformanceMonitoring(mImagePerfDataListener);
+      controller.initializePerformanceMonitoring(
+          mImagePerfDataListener, this, Suppliers.BOOLEAN_FALSE);
       return controller;
     } finally {
       if (FrescoSystrace.isTracing()) {
@@ -144,13 +150,9 @@ public class PipelineDraweeControllerBuilder extends AbstractDraweeControllerBui
     CacheKey cacheKey = null;
     if (cacheKeyFactory != null && imageRequest != null) {
       if (imageRequest.getPostprocessor() != null) {
-        cacheKey = cacheKeyFactory.getPostprocessedBitmapCacheKey(
-            imageRequest,
-            getCallerContext());
+        cacheKey = cacheKeyFactory.getPostprocessedBitmapCacheKey(imageRequest, getCallerContext());
       } else {
-        cacheKey = cacheKeyFactory.getBitmapCacheKey(
-            imageRequest,
-            getCallerContext());
+        cacheKey = cacheKeyFactory.getBitmapCacheKey(imageRequest, getCallerContext());
       }
     }
     return cacheKey;
@@ -167,7 +169,8 @@ public class PipelineDraweeControllerBuilder extends AbstractDraweeControllerBui
         imageRequest,
         callerContext,
         convertCacheLevelToRequestLevel(cacheLevel),
-        getRequestListener(controller));
+        getRequestListener(controller),
+        controllerId);
   }
 
   @Nullable

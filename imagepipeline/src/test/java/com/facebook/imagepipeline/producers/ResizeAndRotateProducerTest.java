@@ -10,7 +10,7 @@ package com.facebook.imagepipeline.producers;
 import static com.facebook.imagepipeline.transcoder.JpegTranscoderUtils.DEFAULT_JPEG_QUALITY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.anyLong;
@@ -41,10 +41,10 @@ import com.facebook.imagepipeline.nativecode.NativeJpegTranscoderFactory;
 import com.facebook.imagepipeline.request.ImageRequest;
 import com.facebook.imagepipeline.testing.FakeClock;
 import com.facebook.imagepipeline.testing.TestExecutorService;
+import com.facebook.imagepipeline.testing.TestNativeLoader;
 import com.facebook.imagepipeline.testing.TestScheduledExecutorService;
 import com.facebook.imagepipeline.testing.TrivialPooledByteBuffer;
 import com.facebook.imagepipeline.transcoder.JpegTranscoderUtils;
-import com.facebook.soloader.SoLoader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -76,19 +76,18 @@ import org.robolectric.annotation.Config;
 })
 public class ResizeAndRotateProducerTest {
   static {
-    SoLoader.setInTestMode();
+    TestNativeLoader.init();
   }
 
   @Mock public Producer mInputProducer;
   @Mock public ImageRequest mImageRequest;
-  @Mock public ProducerListener mProducerListener;
+  @Mock public ProducerListener2 mProducerListener;
   @Mock public Consumer<EncodedImage> mConsumer;
   @Mock public ProducerContext mProducerContext;
   @Mock public PooledByteBufferFactory mPooledByteBufferFactory;
   @Mock public PooledByteBufferOutputStream mPooledByteBufferOutputStream;
 
-  @Rule
-  public PowerMockRule rule = new PowerMockRule();
+  @Rule public PowerMockRule rule = new PowerMockRule();
 
   private static final int MIN_TRANSFORM_INTERVAL_MS =
       ResizeAndRotateProducer.MIN_TRANSFORM_INTERVAL_MS;
@@ -115,22 +114,21 @@ public class ResizeAndRotateProducerTest {
     mFakeClockForWorker.incrementBy(1000);
     mFakeClockForScheduled.incrementBy(1000);
     PowerMockito.mockStatic(SystemClock.class);
-    when(SystemClock.uptimeMillis()).thenAnswer(
-        new Answer<Long>() {
-          @Override
-          public Long answer(InvocationOnMock invocation) throws Throwable {
-            return mFakeClockForWorker.now();
-          }
-        });
+    when(SystemClock.uptimeMillis())
+        .thenAnswer(
+            new Answer<Long>() {
+              @Override
+              public Long answer(InvocationOnMock invocation) throws Throwable {
+                return mFakeClockForWorker.now();
+              }
+            });
 
     when(mImageRequest.getSourceUri()).thenReturn(Uri.parse("http://testuri"));
     mTestExecutorService = new TestExecutorService(mFakeClockForWorker);
     mTestScheduledExecutorService = new TestScheduledExecutorService(mFakeClockForScheduled);
     mUiThreadImmediateExecutorService = mock(UiThreadImmediateExecutorService.class);
     when(mUiThreadImmediateExecutorService.schedule(
-        any(Runnable.class),
-        anyLong(),
-        any(TimeUnit.class)))
+            any(Runnable.class), anyLong(), any(TimeUnit.class)))
         .thenAnswer(
             new Answer<Object>() {
               @Override
@@ -144,29 +142,31 @@ public class ResizeAndRotateProducerTest {
 
     PowerMockito.mockStatic(NativeJpegTranscoder.class);
     PowerMockito.mockStatic(UiThreadImmediateExecutorService.class);
-    when(UiThreadImmediateExecutorService.getInstance()).thenReturn(
-        mUiThreadImmediateExecutorService);
+    when(UiThreadImmediateExecutorService.getInstance())
+        .thenReturn(mUiThreadImmediateExecutorService);
 
     mTestExecutorService = new TestExecutorService(mFakeClockForWorker);
 
     when(mProducerContext.getImageRequest()).thenReturn(mImageRequest);
-    when(mProducerContext.getListener()).thenReturn(mProducerListener);
-    when(mProducerListener.requiresExtraMap(anyString())).thenReturn(true);
+    when(mProducerContext.getProducerListener()).thenReturn(mProducerListener);
+    when(mProducerListener.requiresExtraMap(eq(mProducerContext), anyString())).thenReturn(true);
     mIntermediateResult = CloseableReference.of(mock(PooledByteBuffer.class));
     mFinalResult = CloseableReference.of(mock(PooledByteBuffer.class));
 
     mResizeAndRotateProducerConsumer = null;
     doAnswer(
-        new Answer() {
-          @Override
-          public Object answer(InvocationOnMock invocation) throws Throwable {
-            mResizeAndRotateProducerConsumer =
-                (Consumer<EncodedImage>) invocation.getArguments()[0];
-            return null;
-          }
-        }).when(mInputProducer).produceResults(any(Consumer.class), any(ProducerContext.class));
+            new Answer() {
+              @Override
+              public Object answer(InvocationOnMock invocation) throws Throwable {
+                mResizeAndRotateProducerConsumer =
+                    (Consumer<EncodedImage>) invocation.getArguments()[0];
+                return null;
+              }
+            })
+        .when(mInputProducer)
+        .produceResults(any(Consumer.class), any(ProducerContext.class));
     doReturn(mPooledByteBufferOutputStream).when(mPooledByteBufferFactory).newOutputStream();
-    mPooledByteBuffer = new TrivialPooledByteBuffer(new byte[]{1}, 0);
+    mPooledByteBuffer = new TrivialPooledByteBuffer(new byte[] {1}, 0);
     doReturn(mPooledByteBuffer).when(mPooledByteBufferOutputStream).toByteBuffer();
   }
 
@@ -621,7 +621,7 @@ public class ResizeAndRotateProducerTest {
   }
 
   private static void verifyJpegTranscoderInteractions(int numerator, int rotationAngle) {
-    PowerMockito.verifyStatic();
+    PowerMockito.verifyStatic(NativeJpegTranscoder.class);
     try {
       NativeJpegTranscoder.transcodeJpeg(
           any(InputStream.class),
@@ -636,7 +636,7 @@ public class ResizeAndRotateProducerTest {
 
   private static void verifyJpegTranscoderExifOrientationInteractions(
       int numerator, int exifOrientation) {
-    PowerMockito.verifyStatic();
+    PowerMockito.verifyStatic(NativeJpegTranscoder.class);
     try {
       NativeJpegTranscoder.transcodeJpegWithExifOrientation(
           any(InputStream.class),
@@ -650,7 +650,7 @@ public class ResizeAndRotateProducerTest {
   }
 
   private static void verifyZeroJpegTranscoderInteractions() {
-    PowerMockito.verifyStatic(never());
+    PowerMockito.verifyStatic(NativeJpegTranscoder.class, never());
     try {
       NativeJpegTranscoder.transcodeJpeg(
           any(InputStream.class), any(OutputStream.class), anyInt(), anyInt(), anyInt());
@@ -660,7 +660,7 @@ public class ResizeAndRotateProducerTest {
   }
 
   private static void verifyZeroJpegTranscoderExifOrientationInteractions() {
-    PowerMockito.verifyStatic(never());
+    PowerMockito.verifyStatic(NativeJpegTranscoder.class, never());
     try {
       NativeJpegTranscoder.transcodeJpegWithExifOrientation(
           any(InputStream.class), any(OutputStream.class), anyInt(), anyInt(), anyInt());
@@ -720,7 +720,7 @@ public class ResizeAndRotateProducerTest {
 
   private void whenResizingEnabledIs(boolean resizingEnabled) {
     NativeJpegTranscoder nativeJpegTranscoder =
-        new NativeJpegTranscoder(resizingEnabled, MAX_BITMAP_SIZE, false);
+        new NativeJpegTranscoder(resizingEnabled, MAX_BITMAP_SIZE, false, false);
     NativeJpegTranscoderFactory jpegTranscoderFactory = mock(NativeJpegTranscoderFactory.class);
     when(jpegTranscoderFactory.createImageTranscoder(any(ImageFormat.class), anyBoolean()))
         .thenReturn(nativeJpegTranscoder);
@@ -746,24 +746,20 @@ public class ResizeAndRotateProducerTest {
     when(mImageRequest.getResizeOptions()).thenReturn(resizeOptions);
   }
 
-  private void whenRequestSpecificRotation(
-      @RotationOptions.RotationAngle int rotationAngle) {
+  private void whenRequestSpecificRotation(@RotationOptions.RotationAngle int rotationAngle) {
     when(mImageRequest.getRotationOptions())
         .thenReturn(RotationOptions.forceRotation(rotationAngle));
   }
 
   private void whenDisableRotation() {
-    when(mImageRequest.getRotationOptions())
-        .thenReturn(RotationOptions.disableRotation());
+    when(mImageRequest.getRotationOptions()).thenReturn(RotationOptions.disableRotation());
   }
 
   private void whenRequestsRotationFromMetadataWithDeferringAllowed() {
-    when(mImageRequest.getRotationOptions())
-        .thenReturn(RotationOptions.autoRotateAtRenderTime());
+    when(mImageRequest.getRotationOptions()).thenReturn(RotationOptions.autoRotateAtRenderTime());
   }
 
   private void whenRequestsRotationFromMetadataWithoutDeferring() {
-    when(mImageRequest.getRotationOptions())
-        .thenReturn(RotationOptions.autoRotate());
+    when(mImageRequest.getRotationOptions()).thenReturn(RotationOptions.autoRotate());
   }
 }

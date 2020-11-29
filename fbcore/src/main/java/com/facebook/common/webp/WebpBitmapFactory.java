@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -12,19 +12,19 @@ import android.graphics.BitmapFactory;
 import android.graphics.Rect;
 import java.io.FileDescriptor;
 import java.io.InputStream;
+import javax.annotation.Nullable;
 
 /**
- * Interface for a bitmap factory that can decode WebP images even on versions of Android that
- * don't support it.
- * <p> Implementation is found in the optional static-webp library. To use, add the following to
- * your build.gradle file:
- * <code>implementation 'com.facebook.fresco:static-webp:${FRESCO_VERSION}'</code>
+ * Interface for a bitmap factory that can decode WebP images even on versions of Android that don't
+ * support it.
+ *
+ * <p>Implementation is found in the optional static-webp library. To use, add the following to your
+ * build.gradle file: <code>implementation 'com.facebook.fresco:static-webp:${FRESCO_VERSION}'
+ * </code>
  */
 public interface WebpBitmapFactory {
 
-  /**
-   * We listen to events in Webp direct decoding
-   */
+  /** We listen to events in Webp direct decoding */
   interface WebpErrorLogger {
 
     /**
@@ -51,23 +51,11 @@ public interface WebpBitmapFactory {
   void setBitmapCreator(final BitmapCreator bitmapCreator);
 
   Bitmap decodeFileDescriptor(
-      FileDescriptor fd,
-      Rect outPadding,
-      BitmapFactory.Options opts);
+      FileDescriptor fd, @Nullable Rect outPadding, BitmapFactory.Options opts);
 
-  Bitmap decodeStream(
-      InputStream inputStream,
-      Rect outPadding,
-      BitmapFactory.Options opts);
+  Bitmap decodeStream(InputStream inputStream, Rect outPadding, BitmapFactory.Options opts);
 
-  Bitmap decodeFile(
-      String pathName,
-      BitmapFactory.Options opts);
+  Bitmap decodeFile(String pathName, BitmapFactory.Options opts);
 
-  Bitmap decodeByteArray(
-      byte[] array,
-      int offset,
-      int length,
-      BitmapFactory.Options opts);
-
+  Bitmap decodeByteArray(byte[] array, int offset, int length, BitmapFactory.Options opts);
 }

@@ -4,11 +4,13 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
+
 package com.facebook.drawee.backends.pipeline.info;
 
 import static com.facebook.drawee.backends.pipeline.info.ImageOrigin.DISK;
 import static com.facebook.drawee.backends.pipeline.info.ImageOrigin.LOCAL;
 import static com.facebook.drawee.backends.pipeline.info.ImageOrigin.MEMORY_BITMAP;
+import static com.facebook.drawee.backends.pipeline.info.ImageOrigin.MEMORY_BITMAP_SHORTCUT;
 import static com.facebook.drawee.backends.pipeline.info.ImageOrigin.MEMORY_ENCODED;
 import static com.facebook.drawee.backends.pipeline.info.ImageOrigin.NETWORK;
 import static com.facebook.drawee.backends.pipeline.info.ImageOrigin.UNKNOWN;
@@ -27,6 +29,7 @@ import java.lang.annotation.Retention;
   DISK,
   MEMORY_ENCODED,
   MEMORY_BITMAP,
+  MEMORY_BITMAP_SHORTCUT,
   LOCAL,
 })
 public @interface ImageOrigin {
@@ -36,5 +39,6 @@ public @interface ImageOrigin {
   int DISK = 3;
   int MEMORY_ENCODED = 4;
   int MEMORY_BITMAP = 5;
-  int LOCAL = 6;
+  int MEMORY_BITMAP_SHORTCUT = 6;
+  int LOCAL = 7;
 }

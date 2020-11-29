@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -15,8 +15,8 @@ import javax.annotation.Nullable;
 /**
  * An {@link ExecutorService} that is backed by the application's main looper.
  *
- * <p/> If the execute is called from the thread of the application's main looper,
- * it will be executed synchronously.
+ * <p>If the execute is called from the thread of the application's main looper, it will be executed
+ * synchronously.
  */
 public class UiThreadImmediateExecutorService extends HandlerExecutorServiceImpl {
   private static @Nullable UiThreadImmediateExecutorService sInstance = null;

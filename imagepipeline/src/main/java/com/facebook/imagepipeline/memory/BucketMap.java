@@ -4,10 +4,12 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
+
 package com.facebook.imagepipeline.memory;
 
 import android.util.SparseArray;
-import com.facebook.common.internal.VisibleForTesting;
+import androidx.annotation.VisibleForTesting;
+import com.facebook.infer.annotation.Nullsafe;
 import com.facebook.infer.annotation.ThreadSafe;
 import java.util.LinkedList;
 import javax.annotation.Nullable;
@@ -16,6 +18,7 @@ import javax.annotation.Nullable;
  * Map-like datastructure that allows to have more than one value per int key. Allows to remove a
  * value from LRU key by calling {@link #removeFromEnd()}
  */
+@Nullsafe(Nullsafe.Mode.STRICT)
 @ThreadSafe
 public class BucketMap<T> {
   protected final SparseArray<LinkedEntry<T>> mMap = new SparseArray<>();
@@ -30,7 +33,10 @@ public class BucketMap<T> {
     @Nullable LinkedEntry<I> next;
 
     private LinkedEntry(
-        @Nullable LinkedEntry<I> prev, int key, LinkedList<I> value, @Nullable LinkedEntry<I> next) {
+        @Nullable LinkedEntry<I> prev,
+        int key,
+        LinkedList<I> value,
+        @Nullable LinkedEntry<I> next) {
       this.prev = prev;
       this.key = key;
       this.value = value;
@@ -45,8 +51,8 @@ public class BucketMap<T> {
 
   /**
    * @param key
-   * @return Retrieve an object that corresponds to the specified {@code key}
-   * if present in the {@link BucketMap} or null otherwise
+   * @return Retrieve an object that corresponds to the specified {@code key} if present in the
+   *     {@link BucketMap} or null otherwise
    */
   @Nullable
   public synchronized T acquire(int key) {
@@ -61,8 +67,9 @@ public class BucketMap<T> {
   }
 
   /**
-   * Associates the object with the specified key and puts it into the {@link BucketMap}.
-   * Does not overwrite the previous object, if any.
+   * Associates the object with the specified key and puts it into the {@link BucketMap}. Does not
+   * overwrite the previous object, if any.
+   *
    * @param key
    */
   public synchronized void release(int key, T value) {
@@ -77,9 +84,7 @@ public class BucketMap<T> {
     moveToFront(bucket);
   }
 
-  /**
-   * @return number of objects contained in the {@link BucketMap}
-   */
+  /** @return number of objects contained in the {@link BucketMap} */
   @VisibleForTesting
   synchronized int valueCount() {
     int count = 0;

@@ -8,7 +8,7 @@
 package com.facebook.imagepipeline.producers;
 
 import static org.junit.Assert.*;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.any;
 
@@ -43,8 +43,7 @@ public class AddImageTransformMetaDataProducerTest {
   @Mock public ProducerContext mProducerContext;
   @Mock public Exception mException;
 
-  @Rule
-  public PowerMockRule rule = new PowerMockRule();
+  @Rule public PowerMockRule rule = new PowerMockRule();
 
   private AddImageTransformMetaDataProducer mAddMetaDataProducer;
   private Consumer<EncodedImage> mAddMetaDataConsumer;
@@ -68,14 +67,15 @@ public class AddImageTransformMetaDataProducerTest {
 
     mAddMetaDataConsumer = null;
     doAnswer(
-        new Answer() {
-          @Override
-          public Object answer(InvocationOnMock invocation) throws Throwable {
-            mAddMetaDataConsumer =
-                (Consumer<EncodedImage>) invocation.getArguments()[0];
-            return null;
-          }
-        }).when(mInputProducer).produceResults(any(Consumer.class), any(ProducerContext.class));
+            new Answer() {
+              @Override
+              public Object answer(InvocationOnMock invocation) throws Throwable {
+                mAddMetaDataConsumer = (Consumer<EncodedImage>) invocation.getArguments()[0];
+                return null;
+              }
+            })
+        .when(mInputProducer)
+        .produceResults(any(Consumer.class), any(ProducerContext.class));
     mAddMetaDataProducer.produceResults(mConsumer, mProducerContext);
   }
 

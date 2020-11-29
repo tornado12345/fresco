@@ -1,8 +1,21 @@
+/*
+ * Copyright (c) Facebook, Inc. and its affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+import com.facebook.fresco.buildsrc.Deps
+import com.facebook.fresco.buildsrc.SampleDeps
+import com.facebook.fresco.buildsrc.TestDeps
+
 apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
 
 android {
-    buildToolsVersion rootProject.ext.buildToolsVersion
-    compileSdkVersion rootProject.ext.compileSdkVersion
+    buildToolsVersion FrescoConfig.buildToolsVersion
+    compileSdkVersion FrescoConfig.compileSdkVersion
 
     dexOptions {
         maxProcessCount 2
@@ -11,8 +24,8 @@ android {
 
     defaultConfig {
         applicationId "com.facebook.fresco.samples.showcase"
-        minSdkVersion rootProject.ext.samplesMinSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
+        minSdkVersion FrescoConfig.samplesMinSdkVersion
+        targetSdkVersion FrescoConfig.targetSdkVersion
         versionCode 1
         versionName "${VERSION_NAME}"
 
@@ -48,7 +61,7 @@ android {
         }
         instantRunConfig {
             dimension "main"
-            minSdkVersion 21
+            minSdkVersion FrescoConfig.samplesMinSdkVersion
         }
         internal {
         }
@@ -70,16 +83,15 @@ android {
 }
 
 dependencies {
-    compileOnly "com.google.code.findbugs:jsr305:${JSR_305_VERSION}"
+    compileOnly Deps.jsr305
 
-    implementation "androidx.appcompat:appcompat:${versions.androidx.appcompat}"
-    implementation "androidx.preference:preference:${versions.androidx.preference}"
-    implementation "androidx.recyclerview:recyclerview:${versions.androidx.recyclerview}"
-    implementation "androidx.cardview:cardview:1.0.0"
-    implementation "androidx.legacy:legacy-support-v4:1.0.0"
+    implementation SampleDeps.AndroidX.appcompat
+    implementation SampleDeps.AndroidX.preference
+    implementation SampleDeps.AndroidX.recyclerview
+    implementation SampleDeps.AndroidX.cardview
 
-    implementation "com.google.android.material:material:1.1.0-alpha03"
-    implementation "com.facebook.stetho:stetho-okhttp3:${STETHO_VERSION}"
+    implementation SampleDeps.Google.material
+    implementation Deps.Tools.Stetho.okhttp3
 
     implementation project(':animated-base')
     implementation project(':animated-gif')
@@ -97,17 +109,44 @@ dependencies {
 
     implementation 'com.facebook.keyframes:keyframes:1.0'
 
+    implementation project(':ui-common')
+
+    // Litho
+    compileOnly Deps.Litho.lithoAnnotations
+    implementation Deps.Litho.core
+    implementation Deps.Litho.widget
+
+    // Litho Sections
+    implementation Deps.Litho.Sections.core
+    implementation Deps.Litho.Sections.widget
+    compileOnly Deps.Litho.Sections.sectionsAnnotations
+    annotationProcessor Deps.Litho.Sections.processor
+
+    // Experimental Fresco Vito
+    implementation project(':vito:core')
+    implementation project(':vito:ktx')
+    implementation project(':vito:litho')
+    implementation project(':vito:litho-slideshow')
+    implementation project(':vito:options')
+    implementation project(':vito:provider')
+    implementation project(':vito:source')
+
     // Only used for the custom SVG decoder
-    implementation 'com.caverock:androidsvg:1.2.1'
+    implementation SampleDeps.Showcase.caverockSvg
 
     // Testing-only dependencies
-    androidTestImplementation "androidx.test.espresso:espresso-core:${versions.androidx.espresso}"
-    androidTestImplementation "androidx.test:rules:${versions.androidx.test}"
-    androidTestImplementation "androidx.test:runner:${versions.androidx.test}"
-    androidTestImplementation "junit:junit:${JUNIT_VERSION}"
+    androidTestImplementation TestDeps.AndroidX.espressoCore
+    androidTestImplementation TestDeps.AndroidX.testRules
+    androidTestImplementation TestDeps.AndroidX.testRunner
+    androidTestImplementation TestDeps.junit
 
-    implementation('com.facebook.flipper:flipper:0.17.0'){
+    implementation(Deps.Tools.Flipper.flipper)
+    implementation(Deps.Tools.Flipper.fresco) {
         exclude group: 'com.facebook.fresco'
     }
     implementation project(':tools:flipper')
+
+    implementation Deps.Kotlin.stdlibJdk
+
+    implementation project(path: ':vito:view')
 }

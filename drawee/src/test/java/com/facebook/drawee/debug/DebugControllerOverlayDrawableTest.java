@@ -4,6 +4,7 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
+
 package com.facebook.drawee.debug;
 
 import org.junit.Before;
@@ -11,9 +12,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
-/**
- * Tests {@link DebugControllerOverlayDrawable}
- */
+/** Tests {@link DebugControllerOverlayDrawable} */
 @RunWith(RobolectricTestRunner.class)
 public class DebugControllerOverlayDrawableTest {
 

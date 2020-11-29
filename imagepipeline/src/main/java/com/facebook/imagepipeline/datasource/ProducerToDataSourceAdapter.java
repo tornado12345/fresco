@@ -8,9 +8,10 @@
 package com.facebook.imagepipeline.datasource;
 
 import com.facebook.datasource.DataSource;
-import com.facebook.imagepipeline.listener.RequestListener;
+import com.facebook.imagepipeline.listener.RequestListener2;
 import com.facebook.imagepipeline.producers.Producer;
 import com.facebook.imagepipeline.producers.SettableProducerContext;
+import com.facebook.infer.annotation.Nullsafe;
 import javax.annotation.concurrent.ThreadSafe;
 
 /**
@@ -18,24 +19,21 @@ import javax.annotation.concurrent.ThreadSafe;
  *
  * @param <T>
  */
+@Nullsafe(Nullsafe.Mode.STRICT)
 @ThreadSafe
-public class ProducerToDataSourceAdapter<T>
-    extends AbstractProducerToDataSourceAdapter<T> {
+public class ProducerToDataSourceAdapter<T> extends AbstractProducerToDataSourceAdapter<T> {
 
   public static <T> DataSource<T> create(
       Producer<T> producer,
       SettableProducerContext settableProducerContext,
-      RequestListener listener) {
-    return new ProducerToDataSourceAdapter<T>(
-        producer,
-        settableProducerContext,
-        listener);
+      RequestListener2 listener) {
+    return new ProducerToDataSourceAdapter<T>(producer, settableProducerContext, listener);
   }
 
   private ProducerToDataSourceAdapter(
       Producer<T> producer,
       SettableProducerContext settableProducerContext,
-      RequestListener listener) {
+      RequestListener2 listener) {
     super(producer, settableProducerContext, listener);
   }
 }

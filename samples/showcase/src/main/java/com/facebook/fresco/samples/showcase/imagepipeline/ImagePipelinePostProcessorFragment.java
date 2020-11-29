@@ -1,14 +1,10 @@
 /*
- * This file provided by Facebook is for non-commercial testing and evaluation
- * purposes only.  Facebook reserves all rights not expressly granted.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- * FACEBOOK BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
  */
+
 package com.facebook.fresco.samples.showcase.imagepipeline;
 
 import android.net.Uri;
@@ -41,6 +37,7 @@ import com.facebook.imagepipeline.postprocessors.BlurPostProcessor;
 import com.facebook.imagepipeline.postprocessors.IterativeBoxBlurPostProcessor;
 import com.facebook.imagepipeline.postprocessors.RoundAsCirclePostprocessor;
 import com.facebook.imagepipeline.postprocessors.RoundPostprocessor;
+import com.facebook.imagepipeline.postprocessors.RoundedCornersPostprocessor;
 import com.facebook.imagepipeline.request.ImageRequest;
 import com.facebook.imagepipeline.request.ImageRequestBuilder;
 import com.facebook.imagepipeline.request.Postprocessor;
@@ -69,17 +66,14 @@ public class ImagePipelinePostProcessorFragment extends BaseShowcaseFragment
   @Nullable
   @Override
   public View onCreateView(
-      LayoutInflater inflater,
-      @Nullable ViewGroup container,
-      @Nullable Bundle savedInstanceState) {
+      LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
     return inflater.inflate(R.layout.fragment_imagepipeline_postprocessor, container, false);
   }
 
   @Override
   public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
-    final ImageUriProvider imageUriProvider = ImageUriProvider.getInstance(getContext());
     mSpinnerEntries = getSpinnerItems();
-    mUri = imageUriProvider.createSampleUri(ImageUriProvider.ImageSize.L);
+    mUri = sampleUris().createSampleUri(ImageUriProvider.ImageSize.L);
 
     mButton = (Button) view.findViewById(R.id.button);
     mDraweeMain = (SimpleDraweeView) view.findViewById(R.id.drawee_view);
@@ -110,31 +104,28 @@ public class ImagePipelinePostProcessorFragment extends BaseShowcaseFragment
   }
 
   @Override
-  public int getTitleId() {
-    return R.string.imagepipeline_postprocessor_title;
-  }
-
-  @Override
   public void showDuration(long startNs) {
     final float deltaMs = startNs / 1e6f;
     final String message = String.format((Locale) null, "Duration: %.1f ms", deltaMs);
-    getActivity().runOnUiThread(new Runnable() {
-      @Override
-      public void run() {
-        Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
-      }
-    });
+    getActivity()
+        .runOnUiThread(
+            new Runnable() {
+              @Override
+              public void run() {
+                Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+              }
+            });
   }
 
   private void setPostprocessor(Postprocessor postprocessor) {
-    final ImageRequest imageRequest = ImageRequestBuilder.newBuilderWithSource(mUri)
-        .setPostprocessor(postprocessor)
-        .build();
+    final ImageRequest imageRequest =
+        ImageRequestBuilder.newBuilderWithSource(mUri).setPostprocessor(postprocessor).build();
 
-    final DraweeController draweeController = Fresco.newDraweeControllerBuilder()
-        .setOldController(mDraweeMain.getController())
-        .setImageRequest(imageRequest)
-        .build();
+    final DraweeController draweeController =
+        Fresco.newDraweeControllerBuilder()
+            .setOldController(mDraweeMain.getController())
+            .setImageRequest(imageRequest)
+            .build();
 
     mDraweeMain.setController(draweeController);
   }
@@ -160,9 +151,11 @@ public class ImagePipelinePostProcessorFragment extends BaseShowcaseFragment
     public View getView(int position, View convertView, ViewGroup parent) {
       final LayoutInflater layoutInflater = getLayoutInflater(null);
 
-      final View view = convertView != null
-          ? convertView
-          : layoutInflater.inflate(android.R.layout.simple_spinner_dropdown_item, parent, false);
+      final View view =
+          convertView != null
+              ? convertView
+              : layoutInflater.inflate(
+                  android.R.layout.simple_spinner_dropdown_item, parent, false);
 
       final TextView textView = (TextView) view.findViewById(android.R.id.text1);
       textView.setText(mSpinnerEntries.get(position).descriptionId);
@@ -210,6 +203,10 @@ public class ImagePipelinePostProcessorFragment extends BaseShowcaseFragment
             R.string.imagepipeline_postprocessor_set_round_as_aa_circle,
             new BenchmarkPostprocessorForDuplicatedBitmapInPlace(
                 this, new RoundAsCirclePostprocessor(true))),
+        new Entry(
+            R.string.imagepipeline_postprocessor_set_rounded_corners,
+            new BenchmarkPostprocessorForDuplicatedBitmapInPlace(
+                this, new RoundedCornersPostprocessor())),
         new Entry(
             R.string.imagepipeline_postprocessor_set_round_as_circle,
             new BenchmarkPostprocessorForDuplicatedBitmap(this, new RoundPostprocessor())));

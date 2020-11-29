@@ -8,12 +8,14 @@
 package com.facebook.cache.common;
 
 import android.net.Uri;
+import com.facebook.infer.annotation.Nullsafe;
 
 /**
  * Strongly typed cache key to be used instead of {@link Object}.
  *
- * <p> {@link #toString}, {@link #equals} and {@link #hashCode} methods must be implemented.
+ * <p>{@link #toString}, {@link #equals} and {@link #hashCode} methods must be implemented.
  */
+@Nullsafe(Nullsafe.Mode.STRICT)
 public interface CacheKey {
 
   /** This is useful for instrumentation and debugging purposes. */
@@ -28,7 +30,7 @@ public interface CacheKey {
   /**
    * Returns true if this key was constructed from this {@link Uri}.
    *
-   * Used for cases like deleting all keys for a given uri.
+   * <p>Used for cases like deleting all keys for a given uri.
    */
   boolean containsUri(Uri uri);
 
@@ -37,4 +39,10 @@ public interface CacheKey {
    * keys being contained, the first is returned.
    */
   String getUriString();
+
+  /**
+   * Returns true if this key was constructed from a resource ID. If this ever changes, the disk
+   * cache entries corresponding to this cache key would be invalidated.
+   */
+  boolean isResourceIdForDebugging();
 }

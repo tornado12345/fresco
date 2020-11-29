@@ -12,15 +12,22 @@ import com.facebook.imagepipeline.animated.base.AnimatedImageResult;
 import javax.annotation.Nullable;
 
 /**
- * Encapsulates the data needed in order for {@code AnimatedDrawable} to render a
- * {@code AnimatedImage}.
+ * Encapsulates the data needed in order for {@code AnimatedDrawable} to render a {@code
+ * AnimatedImage}.
  */
 public class CloseableAnimatedImage extends CloseableImage {
 
   private AnimatedImageResult mImageResult;
 
+  private boolean mIsStateful;
+
   public CloseableAnimatedImage(AnimatedImageResult imageResult) {
+    this(imageResult, true);
+  }
+
+  public CloseableAnimatedImage(AnimatedImageResult imageResult, boolean isStateful) {
     mImageResult = imageResult;
+    mIsStateful = isStateful;
   }
 
   @Override
@@ -58,7 +65,7 @@ public class CloseableAnimatedImage extends CloseableImage {
 
   @Override
   public boolean isStateful() {
-    return true;
+    return mIsStateful;
   }
 
   public synchronized AnimatedImageResult getImageResult() {

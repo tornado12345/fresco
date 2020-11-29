@@ -1,14 +1,10 @@
 /*
- * This file provided by Facebook is for non-commercial testing and evaluation
- * purposes only.  Facebook reserves all rights not expressly granted.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- * FACEBOOK BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
  */
+
 package com.facebook.fresco.samples.showcase.imagepipeline;
 
 import android.os.Bundle;
@@ -35,9 +31,7 @@ public class PartialRequestFragment extends BaseShowcaseFragment {
 
   @Override
   public View onCreateView(
-      LayoutInflater inflater,
-      ViewGroup container,
-      Bundle savedInstanceState) {
+      LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
     return inflater.inflate(R.layout.fragment_partial_request, container, false);
   }
 
@@ -48,35 +42,37 @@ public class PartialRequestFragment extends BaseShowcaseFragment {
     final SimpleDraweeView partialDrawee =
         (SimpleDraweeView) view.findViewById(R.id.drawee_partial_img);
 
-    final SimpleDraweeView fullDrawee =
-        (SimpleDraweeView) view.findViewById(R.id.drawee_full_img);
+    final SimpleDraweeView fullDrawee = (SimpleDraweeView) view.findViewById(R.id.drawee_full_img);
 
     final Button clearCacheButton = (Button) view.findViewById(R.id.clear_cache);
-    clearCacheButton.setOnClickListener(new View.OnClickListener() {
-      @Override
-      public void onClick(View v) {
-        partialDrawee.setController(null);
-        fullDrawee.setController(null);
-        Fresco.getImagePipeline().clearDiskCaches();
-        Fresco.getImagePipeline().clearMemoryCaches();
-      }
-    });
+    clearCacheButton.setOnClickListener(
+        new View.OnClickListener() {
+          @Override
+          public void onClick(View v) {
+            partialDrawee.setController(null);
+            fullDrawee.setController(null);
+            Fresco.getImagePipeline().clearDiskCaches();
+            Fresco.getImagePipeline().clearMemoryCaches();
+          }
+        });
 
     final Button prefetchButton = (Button) view.findViewById(R.id.prefetch_now);
-    prefetchButton.setOnClickListener(new View.OnClickListener() {
-      @Override
-      public void onClick(View v) {
-        loadImageIntoDrawee(partialDrawee, BytesRange.toMax(30000));
-      }
-    });
+    prefetchButton.setOnClickListener(
+        new View.OnClickListener() {
+          @Override
+          public void onClick(View v) {
+            loadImageIntoDrawee(partialDrawee, BytesRange.toMax(30000));
+          }
+        });
 
     Button loadFull = (Button) view.findViewById(R.id.load_full);
-    loadFull.setOnClickListener(new View.OnClickListener() {
-      @Override
-      public void onClick(View v) {
-        loadImageIntoDrawee(fullDrawee, null);
-      }
-    });
+    loadFull.setOnClickListener(
+        new View.OnClickListener() {
+          @Override
+          public void onClick(View v) {
+            loadImageIntoDrawee(fullDrawee, null);
+          }
+        });
   }
 
   private void loadImageIntoDrawee(SimpleDraweeView draweeView, @Nullable BytesRange bytesRange) {
@@ -86,16 +82,12 @@ public class PartialRequestFragment extends BaseShowcaseFragment {
             .setBytesRange(bytesRange)
             .build();
 
-    final DraweeController draweeController = Fresco.newDraweeControllerBuilder()
-        .setOldController(draweeView.getController())
-        .setImageRequest(imageRequest)
-        .build();
+    final DraweeController draweeController =
+        Fresco.newDraweeControllerBuilder()
+            .setOldController(draweeView.getController())
+            .setImageRequest(imageRequest)
+            .build();
 
     draweeView.setController(draweeController);
-  }
-
-  @Override
-  public int getTitleId() {
-    return R.string.imagepipeline_partial_request_title;
   }
 }

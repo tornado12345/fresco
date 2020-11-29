@@ -1,14 +1,10 @@
 /*
- * This file provided by Facebook is for non-commercial testing and evaluation
- * purposes only.  Facebook reserves all rights not expressly granted.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- * FACEBOOK BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
  */
+
 package com.facebook.fresco.samples.showcase.imageformat.pjpeg;
 
 import android.graphics.drawable.Animatable;
@@ -44,9 +40,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-/**
- * Progressive JPEG example that logs which frames of a progressive JPEG are rendered
- */
+/** Progressive JPEG example that logs which frames of a progressive JPEG are rendered */
 public class ImageFormatProgressiveJpegFragment extends BaseShowcaseFragment {
 
   private Entry[] mSpinnerEntries;
@@ -62,9 +56,7 @@ public class ImageFormatProgressiveJpegFragment extends BaseShowcaseFragment {
   @Nullable
   @Override
   public View onCreateView(
-      LayoutInflater inflater,
-      @Nullable ViewGroup container,
-      @Nullable Bundle savedInstanceState) {
+      LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
     return inflater.inflate(R.layout.fragment_format_progressive_jpeg, container, false);
   }
 
@@ -126,9 +118,10 @@ public class ImageFormatProgressiveJpegFragment extends BaseShowcaseFragment {
 
   private void setImageUri(Uri uri) {
     mDebugOutput.setText("");
-    ImageRequest request = ImageRequestBuilder.newBuilderWithSource(uri)
-        .setProgressiveRenderingEnabled(mProgressiveRenderingEnabled)
-        .build();
+    ImageRequest request =
+        ImageRequestBuilder.newBuilderWithSource(uri)
+            .setProgressiveRenderingEnabled(mProgressiveRenderingEnabled)
+            .build();
     DraweeController controller =
         Fresco.newDraweeControllerBuilder()
             .setImageRequest(request)
@@ -180,17 +173,13 @@ public class ImageFormatProgressiveJpegFragment extends BaseShowcaseFragment {
             qualityInfo.isOfFullQuality(),
             qualityInfo.getQuality()));
     // Scroll to the bottom
-    mDebugOutputScrollView.post(new Runnable() {
-      @Override
-      public void run() {
-        mDebugOutputScrollView.scrollTo(0, mDebugOutputScrollView.getBottom());
-      }
-    });
-  }
-
-  @Override
-  public int getTitleId() {
-    return R.string.format_pjpeg_title;
+    mDebugOutputScrollView.post(
+        new Runnable() {
+          @Override
+          public void run() {
+            mDebugOutputScrollView.scrollTo(0, mDebugOutputScrollView.getBottom());
+          }
+        });
   }
 
   private class SimpleUriListAdapter extends BaseAdapter {
@@ -214,9 +203,11 @@ public class ImageFormatProgressiveJpegFragment extends BaseShowcaseFragment {
     public View getView(int position, View convertView, ViewGroup parent) {
       final LayoutInflater layoutInflater = getLayoutInflater(null);
 
-      final View view = convertView != null
-          ? convertView
-          : layoutInflater.inflate(android.R.layout.simple_spinner_dropdown_item, parent, false);
+      final View view =
+          convertView != null
+              ? convertView
+              : layoutInflater.inflate(
+                  android.R.layout.simple_spinner_dropdown_item, parent, false);
 
       final TextView textView = (TextView) view.findViewById(android.R.id.text1);
       textView.setText(mSpinnerEntries[position].descriptionId);

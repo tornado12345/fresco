@@ -14,9 +14,7 @@ import com.facebook.imagepipeline.systrace.FrescoSystrace;
 import com.facebook.imageutils.BitmapUtil;
 import javax.annotation.concurrent.Immutable;
 
-/**
- * Configuration class for pools.
- */
+/** Configuration class for pools. */
 @Immutable
 public class PoolConfig {
 
@@ -37,6 +35,7 @@ public class PoolConfig {
   private final int mBitmapPoolMaxPoolSize;
   private final int mBitmapPoolMaxBitmapSize;
   private final boolean mRegisterLruBitmapPoolAsMemoryTrimmable;
+  private final boolean mIgnoreBitmapPoolHardCap;
 
   private PoolConfig(Builder builder) {
     if (FrescoSystrace.isTracing()) {
@@ -86,6 +85,7 @@ public class PoolConfig {
     if (FrescoSystrace.isTracing()) {
       FrescoSystrace.endSection();
     }
+    mIgnoreBitmapPoolHardCap = builder.mIgnoreBitmapPoolHardCap;
   }
 
   public PoolParams getBitmapPoolParams() {
@@ -136,6 +136,10 @@ public class PoolConfig {
     return mRegisterLruBitmapPoolAsMemoryTrimmable;
   }
 
+  public boolean isIgnoreBitmapPoolHardCap() {
+    return mIgnoreBitmapPoolHardCap;
+  }
+
   public static Builder newBuilder() {
     return new Builder();
   }
@@ -154,17 +158,16 @@ public class PoolConfig {
     private int mBitmapPoolMaxPoolSize;
     private int mBitmapPoolMaxBitmapSize;
     private boolean mRegisterLruBitmapPoolAsMemoryTrimmable;
+    public boolean mIgnoreBitmapPoolHardCap;
 
-    private Builder() {
-    }
+    private Builder() {}
 
     public Builder setBitmapPoolParams(PoolParams bitmapPoolParams) {
       mBitmapPoolParams = Preconditions.checkNotNull(bitmapPoolParams);
       return this;
     }
 
-    public Builder setBitmapPoolStatsTracker(
-        PoolStatsTracker bitmapPoolStatsTracker) {
+    public Builder setBitmapPoolStatsTracker(PoolStatsTracker bitmapPoolStatsTracker) {
       mBitmapPoolStatsTracker = Preconditions.checkNotNull(bitmapPoolStatsTracker);
       return this;
     }
@@ -197,8 +200,7 @@ public class PoolConfig {
 
     public Builder setSmallByteArrayPoolStatsTracker(
         PoolStatsTracker smallByteArrayPoolStatsTracker) {
-      mSmallByteArrayPoolStatsTracker =
-          Preconditions.checkNotNull(smallByteArrayPoolStatsTracker);
+      mSmallByteArrayPoolStatsTracker = Preconditions.checkNotNull(smallByteArrayPoolStatsTracker);
       return this;
     }
 
@@ -221,9 +223,15 @@ public class PoolConfig {
       return this;
     }
 
-    public void setRegisterLruBitmapPoolAsMemoryTrimmable(
+    public Builder setRegisterLruBitmapPoolAsMemoryTrimmable(
         boolean registerLruBitmapPoolAsMemoryTrimmable) {
       mRegisterLruBitmapPoolAsMemoryTrimmable = registerLruBitmapPoolAsMemoryTrimmable;
+      return this;
+    }
+
+    public Builder setIgnoreBitmapPoolHardCap(boolean ignoreBitmapPoolHardCap) {
+      mIgnoreBitmapPoolHardCap = ignoreBitmapPoolHardCap;
+      return this;
     }
   }
 }

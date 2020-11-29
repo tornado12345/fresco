@@ -8,61 +8,68 @@
 package com.facebook.imagepipeline.producers;
 
 import com.facebook.common.executors.StatefulRunnable;
+import com.facebook.infer.annotation.Nullsafe;
 import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
  * {@link StatefulRunnable} intended to be used by producers.
  *
- * <p> Class implements common functionality related to handling producer instrumentation and
+ * <p>Class implements common functionality related to handling producer instrumentation and
  * resource management.
  */
-public abstract class StatefulProducerRunnable<T>
-    extends StatefulRunnable<T> {
+@Nullsafe(Nullsafe.Mode.STRICT)
+public abstract class StatefulProducerRunnable<T> extends StatefulRunnable<T> {
 
   private final Consumer<T> mConsumer;
-  private final ProducerListener mProducerListener;
+  private final ProducerListener2 mProducerListener;
   private final String mProducerName;
-  private final String mRequestId;
+  private final ProducerContext mProducerContext;
 
   public StatefulProducerRunnable(
       Consumer<T> consumer,
-      ProducerListener producerListener,
-      String producerName,
-      String requestId) {
+      ProducerListener2 producerListener,
+      ProducerContext producerContext,
+      String producerName) {
     mConsumer = consumer;
     mProducerListener = producerListener;
     mProducerName = producerName;
-    mRequestId = requestId;
+    mProducerContext = producerContext;
 
-    mProducerListener.onProducerStart(mRequestId, mProducerName);
+    mProducerListener.onProducerStart(mProducerContext, mProducerName);
   }
 
   @Override
   protected void onSuccess(T result) {
     mProducerListener.onProducerFinishWithSuccess(
-        mRequestId,
+        mProducerContext,
         mProducerName,
-        mProducerListener.requiresExtraMap(mRequestId) ? getExtraMapOnSuccess(result) : null);
+        mProducerListener.requiresExtraMap(mProducerContext, mProducerName)
+            ? getExtraMapOnSuccess(result)
+            : null);
     mConsumer.onNewResult(result, Consumer.IS_LAST);
   }
 
   @Override
   protected void onFailure(Exception e) {
     mProducerListener.onProducerFinishWithFailure(
-        mRequestId,
+        mProducerContext,
         mProducerName,
         e,
-        mProducerListener.requiresExtraMap(mRequestId) ? getExtraMapOnFailure(e) : null);
+        mProducerListener.requiresExtraMap(mProducerContext, mProducerName)
+            ? getExtraMapOnFailure(e)
+            : null);
     mConsumer.onFailure(e);
   }
 
   @Override
   protected void onCancellation() {
     mProducerListener.onProducerFinishWithCancellation(
-        mRequestId,
+        mProducerContext,
         mProducerName,
-        mProducerListener.requiresExtraMap(mRequestId) ? getExtraMapOnCancellation() : null);
+        mProducerListener.requiresExtraMap(mProducerContext, mProducerName)
+            ? getExtraMapOnCancellation()
+            : null);
     mConsumer.onCancellation();
   }
 

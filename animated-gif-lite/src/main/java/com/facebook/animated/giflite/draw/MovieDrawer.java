@@ -4,11 +4,13 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
+
 package com.facebook.animated.giflite.draw;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Movie;
+import com.facebook.infer.annotation.Nullsafe;
 import javax.annotation.Nullable;
 
 /**
@@ -17,6 +19,7 @@ import javax.annotation.Nullable;
  * not be accessed outside of {@link MovieDrawer}. Attempts to optimize work done by the drawing
  * {@link Canvas} by detecting if the underlying {@link Bitmap} has changed.
  */
+@Nullsafe(Nullsafe.Mode.STRICT)
 public class MovieDrawer {
 
   private final Movie mMovie;

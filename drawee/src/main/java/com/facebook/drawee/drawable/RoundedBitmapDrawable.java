@@ -4,6 +4,7 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
+
 package com.facebook.drawee.drawable;
 
 import android.content.res.Resources;
@@ -14,7 +15,7 @@ import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
-import com.facebook.common.internal.VisibleForTesting;
+import androidx.annotation.VisibleForTesting;
 import com.facebook.imagepipeline.systrace.FrescoSystrace;
 import java.lang.ref.WeakReference;
 import javax.annotation.Nullable;
@@ -37,7 +38,7 @@ public class RoundedBitmapDrawable extends RoundedDrawable {
     mBorderPaint.setStyle(Paint.Style.STROKE);
   }
 
-  public RoundedBitmapDrawable(Resources res, Bitmap bitmap) {
+  public RoundedBitmapDrawable(Resources res, @Nullable Bitmap bitmap) {
     this(res, bitmap, null);
   }
 
@@ -91,14 +92,11 @@ public class RoundedBitmapDrawable extends RoundedDrawable {
    * @return the RoundedBitmapDrawable that is created
    */
   public static RoundedBitmapDrawable fromBitmapDrawable(
-      Resources res,
-      BitmapDrawable bitmapDrawable) {
+      Resources res, BitmapDrawable bitmapDrawable) {
     return new RoundedBitmapDrawable(res, bitmapDrawable.getBitmap(), bitmapDrawable.getPaint());
   }
 
-  /**
-   * If both the radii and border width are zero or bitmap is null, there is nothing to round.
-   */
+  /** If both the radii and border width are zero or bitmap is null, there is nothing to round. */
   @VisibleForTesting
   boolean shouldRound() {
     return super.shouldRound() && mBitmap != null;
@@ -123,5 +121,4 @@ public class RoundedBitmapDrawable extends RoundedDrawable {
   Paint getPaint() {
     return mPaint;
   }
-
 }

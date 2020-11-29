@@ -4,6 +4,7 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
+
 package com.facebook.imagepipeline.decoder;
 
 import com.facebook.imageformat.ImageFormat;
@@ -12,9 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Configuration for {@link ImageDecoder}.
- */
+/** Configuration for {@link ImageDecoder}. */
 public class ImageDecoderConfig {
 
   private final Map<ImageFormat, ImageDecoder> mCustomImageDecoders;
@@ -37,6 +36,7 @@ public class ImageDecoderConfig {
   public static Builder newBuilder() {
     return new Builder();
   }
+
   public static class Builder {
     private Map<ImageFormat, ImageDecoder> mCustomImageDecoders;
     private List<ImageFormat.FormatChecker> mCustomImageFormats;
@@ -62,9 +62,8 @@ public class ImageDecoderConfig {
     }
 
     /**
-     * Use a different decoder for an existing image format.
-     * This can be used for example to set a custom decoder for any of the
-     * {@link com.facebook.imageformat.DefaultImageFormats}
+     * Use a different decoder for an existing image format. This can be used for example to set a
+     * custom decoder for any of the {@link com.facebook.imageformat.DefaultImageFormats}
      *
      * @param imageFormat the existing image format
      * @param decoder the decoder to use
@@ -72,7 +71,7 @@ public class ImageDecoderConfig {
      */
     public Builder overrideDecoder(ImageFormat imageFormat, ImageDecoder decoder) {
       if (mCustomImageDecoders == null) {
-        mCustomImageDecoders  = new HashMap<>();
+        mCustomImageDecoders = new HashMap<>();
       }
       mCustomImageDecoders.put(imageFormat, decoder);
       return this;

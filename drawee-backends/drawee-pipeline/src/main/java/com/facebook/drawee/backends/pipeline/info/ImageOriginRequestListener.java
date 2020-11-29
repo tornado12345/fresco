@@ -4,6 +4,7 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
+
 package com.facebook.drawee.backends.pipeline.info;
 
 import com.facebook.imagepipeline.listener.BaseRequestListener;
@@ -34,10 +35,14 @@ public class ImageOriginRequestListener extends BaseRequestListener {
   }
 
   @Override
-  public void onUltimateProducerReached(String requestId, String producerName, boolean successful) {
+  public void onUltimateProducerReached(
+      String requestId, String ultimateProducerName, boolean successful) {
     if (mImageOriginLister != null) {
       mImageOriginLister.onImageLoaded(
-          mControllerId, ImageOriginUtils.mapProducerNameToImageOrigin(producerName), successful);
+          mControllerId,
+          ImageOriginUtils.mapProducerNameToImageOrigin(ultimateProducerName),
+          successful,
+          ultimateProducerName);
     }
   }
 }

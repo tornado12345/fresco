@@ -4,20 +4,26 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
+
 package com.facebook.drawee.backends.pipeline.info.internal;
 
 import android.graphics.drawable.Animatable;
-import com.facebook.common.internal.VisibleForTesting;
+import androidx.annotation.VisibleForTesting;
 import com.facebook.common.time.MonotonicClock;
 import com.facebook.drawee.backends.pipeline.info.ImageLoadStatus;
 import com.facebook.drawee.backends.pipeline.info.ImagePerfMonitor;
 import com.facebook.drawee.backends.pipeline.info.ImagePerfState;
 import com.facebook.drawee.backends.pipeline.info.VisibilityState;
 import com.facebook.drawee.controller.BaseControllerListener;
+import com.facebook.fresco.ui.common.DimensionsInfo;
+import com.facebook.fresco.ui.common.OnDrawControllerListener;
 import com.facebook.imagepipeline.image.ImageInfo;
+import com.facebook.infer.annotation.Nullsafe;
 import javax.annotation.Nullable;
 
-public class ImagePerfControllerListener extends BaseControllerListener<ImageInfo> {
+@Nullsafe(Nullsafe.Mode.STRICT)
+public class ImagePerfControllerListener extends BaseControllerListener<ImageInfo>
+    implements OnDrawControllerListener<ImageInfo> {
 
   private final MonotonicClock mClock;
   private final ImagePerfState mImagePerfState;
@@ -33,6 +39,8 @@ public class ImagePerfControllerListener extends BaseControllerListener<ImageInf
   @Override
   public void onSubmit(String id, Object callerContext) {
     final long now = mClock.now();
+
+    mImagePerfState.resetPointsTimestamps();
 
     mImagePerfState.setControllerSubmitTimeMs(now);
     mImagePerfState.setControllerId(id);
@@ -72,6 +80,7 @@ public class ImagePerfControllerListener extends BaseControllerListener<ImageInf
 
     mImagePerfState.setControllerFailureTimeMs(now);
     mImagePerfState.setControllerId(id);
+    mImagePerfState.setErrorThrowable(throwable);
 
     mImagePerfMonitor.notifyStatusUpdated(mImagePerfState, ImageLoadStatus.ERROR);
 
@@ -85,7 +94,8 @@ public class ImagePerfControllerListener extends BaseControllerListener<ImageInf
 
     int lastImageLoadStatus = mImagePerfState.getImageLoadStatus();
     if (lastImageLoadStatus != ImageLoadStatus.SUCCESS
-        && lastImageLoadStatus != ImageLoadStatus.ERROR) {
+        && lastImageLoadStatus != ImageLoadStatus.ERROR
+        && lastImageLoadStatus != ImageLoadStatus.DRAW) {
       mImagePerfState.setControllerCancelTimeMs(now);
       mImagePerfState.setControllerId(id);
       // The image request was canceled
@@ -93,6 +103,13 @@ public class ImagePerfControllerListener extends BaseControllerListener<ImageInf
     }
 
     reportViewInvisible(now);
+  }
+
+  @Override
+  public void onImageDrawn(String id, ImageInfo info, DimensionsInfo dimensionsInfo) {
+    mImagePerfState.setImageDrawTimeMs(mClock.now());
+    mImagePerfState.setDimensionsInfo(dimensionsInfo);
+    mImagePerfMonitor.notifyStatusUpdated(mImagePerfState, ImageLoadStatus.DRAW);
   }
 
   @VisibleForTesting

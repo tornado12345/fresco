@@ -14,15 +14,17 @@ import com.facebook.drawee.backends.pipeline.info.ImagePerfData;
 import com.facebook.drawee.backends.pipeline.info.ImagePerfDataListener;
 import com.facebook.drawee.backends.pipeline.info.VisibilityState;
 import com.facebook.imagepipeline.request.ImageRequest;
+import com.facebook.infer.annotation.Nullsafe;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
 
 /** Fresco image tracker for Sonar */
+@Nullsafe(Nullsafe.Mode.LOCAL)
 public class FlipperImageTracker implements DebugImageTracker, ImagePerfDataListener {
 
-  private static final int MAX_IMAGES_TO_TRACK = 200;
+  private static final int MAX_IMAGES_TO_TRACK = 1000;
 
   private final Map<ImageRequest, ImageDebugData> mImageRequestDebugDataMap;
   private final Map<CacheKey, ImageDebugData> mImageDebugDataMap;
@@ -54,8 +56,14 @@ public class FlipperImageTracker implements DebugImageTracker, ImagePerfDataList
     imageDebugData.addRequestId(requestId);
   }
 
+  public synchronized ImageDebugData trackImage(String localPath, CacheKey key) {
+    ImageDebugData data = new ImageDebugData(localPath);
+    mImageDebugDataMap.put(key, data);
+    return data;
+  }
+
   public synchronized ImageDebugData trackImage(CacheKey key) {
-    ImageDebugData data = new ImageDebugData(null);
+    ImageDebugData data = new ImageDebugData();
     mImageDebugDataMap.put(key, data);
     return data;
   }
@@ -69,6 +77,15 @@ public class FlipperImageTracker implements DebugImageTracker, ImagePerfDataList
       }
     }
     return key.getUriString();
+  }
+
+  @Nullable
+  public synchronized String getLocalPath(CacheKey key) {
+    ImageDebugData imageDebugData = getImageDebugData(key);
+    if (imageDebugData != null) {
+      return imageDebugData.getLocalPath();
+    }
+    return null;
   }
 
   @Nullable
@@ -114,11 +131,9 @@ public class FlipperImageTracker implements DebugImageTracker, ImagePerfDataList
     if (imagePerfData == null || imagePerfData.getImageRequest() == null) {
       return;
     }
-
-    if (mImageRequestDebugDataMap.containsKey(imagePerfData.getImageRequest())) {
-      mImageRequestDebugDataMap
-          .get(imagePerfData.getImageRequest())
-          .setImagePerfData(imagePerfData);
+    ImageDebugData debugData = mImageRequestDebugDataMap.get(imagePerfData.getImageRequest());
+    if (debugData != null) {
+      debugData.setImagePerfData(imagePerfData);
     } else {
       ImageDebugData imageDebugData = new ImageDebugData(imagePerfData.getImageRequest());
       imageDebugData.setImagePerfData(imagePerfData);
@@ -140,9 +155,23 @@ public class FlipperImageTracker implements DebugImageTracker, ImagePerfDataList
     private @Nullable Set<CacheKey> mCacheKeys;
     private @Nullable Set<String> mRequestIds;
     private @Nullable Set<String> mResourceIds;
+    private @Nullable String mLocalPath;
+
+    public ImageDebugData() {
+      this(null, null);
+    }
 
     public ImageDebugData(@Nullable ImageRequest imageRequest) {
+      this(imageRequest, null);
+    }
+
+    public ImageDebugData(@Nullable String localPath) {
+      this(null, localPath);
+    }
+
+    public ImageDebugData(@Nullable ImageRequest imageRequest, @Nullable String localPath) {
       mImageRequest = imageRequest;
+      mLocalPath = localPath;
     }
 
     @Nullable
@@ -200,6 +229,11 @@ public class FlipperImageTracker implements DebugImageTracker, ImagePerfDataList
     @Nullable
     public Set<String> getResourceIds() {
       return mResourceIds;
+    }
+
+    @Nullable
+    public String getLocalPath() {
+      return mLocalPath;
     }
   }
 }

@@ -14,8 +14,8 @@ import java.util.concurrent.Executor;
 import javax.annotation.concurrent.GuardedBy;
 
 /**
- * Only permits a configurable number of requests to be kicked off simultaneously. If that number
- * is exceeded, then requests are queued up and kicked off once other requests complete.
+ * Only permits a configurable number of requests to be kicked off simultaneously. If that number is
+ * exceeded, then requests are queued up and kicked off once other requests complete.
  */
 public class ThrottlingProducer<T> implements Producer<T> {
 
@@ -26,14 +26,14 @@ public class ThrottlingProducer<T> implements Producer<T> {
 
   @GuardedBy("this")
   private int mNumCurrentRequests;
+
   @GuardedBy("this")
   private final ConcurrentLinkedQueue<Pair<Consumer<T>, ProducerContext>> mPendingRequests;
+
   private final Executor mExecutor;
 
   public ThrottlingProducer(
-      int maxSimultaneousRequests,
-      Executor executor,
-      final Producer<T> inputProducer) {
+      int maxSimultaneousRequests, Executor executor, final Producer<T> inputProducer) {
     mMaxSimultaneousRequests = maxSimultaneousRequests;
     mExecutor = Preconditions.checkNotNull(executor);
     mInputProducer = Preconditions.checkNotNull(inputProducer);
@@ -43,8 +43,8 @@ public class ThrottlingProducer<T> implements Producer<T> {
 
   @Override
   public void produceResults(final Consumer<T> consumer, final ProducerContext producerContext) {
-    final ProducerListener producerListener = producerContext.getListener();
-    producerListener.onProducerStart(producerContext.getId(), PRODUCER_NAME);
+    final ProducerListener2 producerListener = producerContext.getProducerListener();
+    producerListener.onProducerStart(producerContext, PRODUCER_NAME);
 
     boolean delayRequest;
     synchronized (this) {
@@ -63,8 +63,8 @@ public class ThrottlingProducer<T> implements Producer<T> {
   }
 
   void produceResultsInternal(Consumer<T> consumer, ProducerContext producerContext) {
-    ProducerListener producerListener = producerContext.getListener();
-    producerListener.onProducerFinishWithSuccess(producerContext.getId(), PRODUCER_NAME, null);
+    ProducerListener2 producerListener = producerContext.getProducerListener();
+    producerListener.onProducerFinishWithSuccess(producerContext, PRODUCER_NAME, null);
     mInputProducer.produceResults(new ThrottlerConsumer(consumer), producerContext);
   }
 

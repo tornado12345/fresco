@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -61,9 +61,7 @@ public class FirstAvailableDataSourceSupplier<T> implements Supplier<DataSource<
 
   @Override
   public String toString() {
-    return Objects.toStringHelper(this)
-        .add("list", mDataSourceSuppliers)
-        .toString();
+    return Objects.toStringHelper(this).add("list", mDataSourceSuppliers).toString();
   }
 
   @ThreadSafe
@@ -153,9 +151,7 @@ public class FirstAvailableDataSourceSupplier<T> implements Supplier<DataSource<
       return mDataSourceWithResult;
     }
 
-    private void maybeSetDataSourceWithResult(
-        DataSource<T> dataSource,
-        boolean isFinished) {
+    private void maybeSetDataSourceWithResult(DataSource<T> dataSource, boolean isFinished) {
       DataSource<T> oldDataSource = null;
       synchronized (FirstAvailableDataSource.this) {
         if (dataSource != mCurrentDataSource || dataSource == mDataSourceWithResult) {
@@ -182,7 +178,7 @@ public class FirstAvailableDataSourceSupplier<T> implements Supplier<DataSource<
         closeSafely(dataSource);
       }
       if (!startNextDataSource()) {
-        setFailure(dataSource.getFailureCause());
+        setFailure(dataSource.getFailureCause(), dataSource.getExtras());
       }
     }
 
@@ -191,7 +187,7 @@ public class FirstAvailableDataSourceSupplier<T> implements Supplier<DataSource<
       // If the data source with the new result is our {@code mDataSourceWithResult},
       // we have to notify our subscribers about the new result.
       if (dataSource == getDataSourceWithResult()) {
-        setResult(null, dataSource.isFinished());
+        setResult(null, dataSource.isFinished(), dataSource.getExtras());
       }
     }
 
@@ -209,8 +205,7 @@ public class FirstAvailableDataSourceSupplier<T> implements Supplier<DataSource<
       }
 
       @Override
-      public void onCancellation(DataSource<T> dataSource) {
-      }
+      public void onCancellation(DataSource<T> dataSource) {}
 
       @Override
       public void onNewResult(DataSource<T> dataSource) {

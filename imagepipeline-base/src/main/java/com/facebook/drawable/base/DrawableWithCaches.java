@@ -7,15 +7,16 @@
 
 package com.facebook.drawable.base;
 
+import com.facebook.infer.annotation.Nullsafe;
+
 /**
- * A drawable can implement this interface to be notified when it might be convenient to
- * drop its caches in order conserve memory. This is best effort and the Drawable should not
- * depend on it being called.
+ * A drawable can implement this interface to be notified when it might be convenient to drop its
+ * caches in order conserve memory. This is best effort and the Drawable should not depend on it
+ * being called.
  */
+@Nullsafe(Nullsafe.Mode.STRICT)
 public interface DrawableWithCaches {
 
-  /**
-   * Informs the Drawable to drop its caches.
-   */
+  /** Informs the Drawable to drop its caches. */
   void dropCaches();
 }

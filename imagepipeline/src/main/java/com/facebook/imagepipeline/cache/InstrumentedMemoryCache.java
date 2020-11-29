@@ -8,7 +8,9 @@
 package com.facebook.imagepipeline.cache;
 
 import com.facebook.common.internal.Predicate;
+import com.facebook.common.memory.MemoryTrimType;
 import com.facebook.common.references.CloseableReference;
+import javax.annotation.Nullable;
 
 public class InstrumentedMemoryCache<K, V> implements MemoryCache<K, V> {
 
@@ -24,7 +26,7 @@ public class InstrumentedMemoryCache<K, V> implements MemoryCache<K, V> {
   public CloseableReference<V> get(K key) {
     CloseableReference<V> result = mDelegate.get(key);
     if (result == null) {
-      mTracker.onCacheMiss();
+      mTracker.onCacheMiss(key);
     } else {
       mTracker.onCacheHit(key);
     }
@@ -32,8 +34,13 @@ public class InstrumentedMemoryCache<K, V> implements MemoryCache<K, V> {
   }
 
   @Override
+  public void probe(K key) {
+    mDelegate.probe(key);
+  }
+
+  @Override
   public CloseableReference<V> cache(K key, CloseableReference<V> value) {
-    mTracker.onCachePut();
+    mTracker.onCachePut(key);
     return mDelegate.cache(key, value);
   }
 
@@ -50,5 +57,25 @@ public class InstrumentedMemoryCache<K, V> implements MemoryCache<K, V> {
   @Override
   public boolean contains(K key) {
     return mDelegate.contains(key);
+  }
+
+  @Override
+  public int getCount() {
+    return mDelegate.getCount();
+  }
+
+  @Override
+  public int getSizeInBytes() {
+    return mDelegate.getSizeInBytes();
+  }
+
+  @Override
+  public void trim(MemoryTrimType trimType) {
+    mDelegate.trim(trimType);
+  }
+
+  @Override
+  public @Nullable String getDebugData() {
+    return mDelegate.getDebugData();
   }
 }

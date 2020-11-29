@@ -1,14 +1,10 @@
 /*
- * This file provided by Facebook is for non-commercial testing and evaluation
- * purposes only.  Facebook reserves all rights not expressly granted.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- * FACEBOOK BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
  */
+
 package com.facebook.fresco.samples.showcase.imageformat.keyframes;
 
 import android.os.Build;
@@ -28,9 +24,7 @@ import com.facebook.fresco.samples.showcase.CustomImageFormatConfigurator;
 import com.facebook.fresco.samples.showcase.R;
 import com.facebook.fresco.samples.showcase.misc.CheckerBoardDrawable;
 
-/**
- * Fragment using a SimpleDraweeView to display a Keyframes animation
- */
+/** Fragment using a SimpleDraweeView to display a Keyframes animation */
 public class ImageFormatKeyframesFragment extends BaseShowcaseFragment {
 
   private SimpleDraweeView mSimpleDraweeView;
@@ -38,9 +32,7 @@ public class ImageFormatKeyframesFragment extends BaseShowcaseFragment {
   @Nullable
   @Override
   public View onCreateView(
-      LayoutInflater inflater,
-      @Nullable ViewGroup container,
-      @Nullable Bundle savedInstanceState) {
+      LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
     return inflater.inflate(R.layout.fragment_format_keyframes, container, false);
   }
 
@@ -49,11 +41,6 @@ public class ImageFormatKeyframesFragment extends BaseShowcaseFragment {
     if (CustomImageFormatConfigurator.isKeyframesEnabled()) {
       initAnimation(view);
     }
-  }
-
-  @Override
-  public int getTitleId() {
-    return R.string.format_keyframes_title;
   }
 
   @RequiresApi(api = Build.VERSION_CODES.HONEYCOMB)
@@ -69,14 +56,14 @@ public class ImageFormatKeyframesFragment extends BaseShowcaseFragment {
     mSimpleDraweeView.setController(controller);
 
     final SwitchCompat switchBackground = (SwitchCompat) view.findViewById(R.id.switch_background);
-    switchBackground.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-      @Override
-      public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-        mSimpleDraweeView.getHierarchy().setBackgroundImage(isChecked
-            ? new CheckerBoardDrawable(getResources())
-            : null);
-      }
-    });
+    switchBackground.setOnCheckedChangeListener(
+        new CompoundButton.OnCheckedChangeListener() {
+          @Override
+          public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+            mSimpleDraweeView
+                .getHierarchy()
+                .setBackgroundImage(isChecked ? new CheckerBoardDrawable(getResources()) : null);
+          }
+        });
   }
-
 }

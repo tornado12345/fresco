@@ -7,24 +7,21 @@
 
 package com.facebook.imagepipeline.producers;
 
-/**
- * Empty implementation of {@link ProducerContextCallbacks}.
- */
+import com.facebook.infer.annotation.Nullsafe;
+
+/** Empty implementation of {@link ProducerContextCallbacks}. */
+@Nullsafe(Nullsafe.Mode.STRICT)
 public class BaseProducerContextCallbacks implements ProducerContextCallbacks {
 
   @Override
-  public void onCancellationRequested() {
-  }
+  public void onCancellationRequested() {}
 
   @Override
-  public void onIsPrefetchChanged() {
-  }
+  public void onIsPrefetchChanged() {}
 
   @Override
-  public void onIsIntermediateResultExpectedChanged() {
-  }
+  public void onIsIntermediateResultExpectedChanged() {}
 
   @Override
-  public void onPriorityChanged() {
-  }
+  public void onPriorityChanged() {}
 }

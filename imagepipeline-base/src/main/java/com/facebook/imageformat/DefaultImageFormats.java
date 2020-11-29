@@ -4,15 +4,16 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
+
 package com.facebook.imageformat;
 
 import com.facebook.common.internal.ImmutableList;
+import com.facebook.infer.annotation.Nullsafe;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Default image formats that Fresco supports.
- */
+/** Default image formats that Fresco supports. */
+@Nullsafe(Nullsafe.Mode.STRICT)
 public final class DefaultImageFormats {
 
   public static final ImageFormat JPEG = new ImageFormat("JPEG", "jpeg");
@@ -27,6 +28,7 @@ public final class DefaultImageFormats {
       new ImageFormat("WEBP_EXTENDED_WITH_ALPHA", "webp");
   public static final ImageFormat WEBP_ANIMATED = new ImageFormat("WEBP_ANIMATED", "webp");
   public static final ImageFormat HEIF = new ImageFormat("HEIF", "heif");
+  public static final ImageFormat DNG = new ImageFormat("DNG", "dng");
 
   private static ImmutableList<ImageFormat> sAllDefaultFormats;
 
@@ -37,8 +39,7 @@ public final class DefaultImageFormats {
    * @return true if WebP format
    */
   public static boolean isWebpFormat(ImageFormat imageFormat) {
-    return isStaticWebpFormat(imageFormat) ||
-        imageFormat == WEBP_ANIMATED;
+    return isStaticWebpFormat(imageFormat) || imageFormat == WEBP_ANIMATED;
   }
 
   /**
@@ -48,15 +49,14 @@ public final class DefaultImageFormats {
    * @return true if static WebP
    */
   public static boolean isStaticWebpFormat(ImageFormat imageFormat) {
-    return imageFormat == WEBP_SIMPLE ||
-        imageFormat == WEBP_LOSSLESS ||
-        imageFormat == WEBP_EXTENDED ||
-        imageFormat == WEBP_EXTENDED_WITH_ALPHA;
+    return imageFormat == WEBP_SIMPLE
+        || imageFormat == WEBP_LOSSLESS
+        || imageFormat == WEBP_EXTENDED
+        || imageFormat == WEBP_EXTENDED_WITH_ALPHA;
   }
 
   /**
-   * Get all default formats supported by Fresco.
-   * Does not include {@link ImageFormat#UNKNOWN}.
+   * Get all default formats supported by Fresco. Does not include {@link ImageFormat#UNKNOWN}.
    *
    * @return all supported default formats
    */
@@ -79,6 +79,5 @@ public final class DefaultImageFormats {
     return sAllDefaultFormats;
   }
 
-  private DefaultImageFormats() {
-  }
+  private DefaultImageFormats() {}
 }

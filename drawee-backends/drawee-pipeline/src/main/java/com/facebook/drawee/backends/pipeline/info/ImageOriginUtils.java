@@ -4,6 +4,7 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
+
 package com.facebook.drawee.backends.pipeline.info;
 
 import com.facebook.imagepipeline.producers.BitmapMemoryCacheGetProducer;
@@ -16,8 +17,14 @@ import com.facebook.imagepipeline.producers.LocalContentUriFetchProducer;
 import com.facebook.imagepipeline.producers.LocalContentUriThumbnailFetchProducer;
 import com.facebook.imagepipeline.producers.LocalFileFetchProducer;
 import com.facebook.imagepipeline.producers.LocalResourceFetchProducer;
+import com.facebook.imagepipeline.producers.LocalVideoThumbnailProducer;
 import com.facebook.imagepipeline.producers.NetworkFetchProducer;
+import com.facebook.imagepipeline.producers.PartialDiskCacheProducer;
+import com.facebook.imagepipeline.producers.PostprocessedBitmapMemoryCacheProducer;
+import com.facebook.imagepipeline.producers.QualifiedResourceFetchProducer;
+import com.facebook.infer.annotation.Nullsafe;
 
+@Nullsafe(Nullsafe.Mode.STRICT)
 public class ImageOriginUtils {
 
   public static String toString(@ImageOrigin int imageOrigin) {
@@ -30,13 +37,14 @@ public class ImageOriginUtils {
         return "memory_encoded";
       case ImageOrigin.MEMORY_BITMAP:
         return "memory_bitmap";
+      case ImageOrigin.MEMORY_BITMAP_SHORTCUT:
+        return "memory_bitmap_shortcut";
       case ImageOrigin.LOCAL:
         return "local";
       case ImageOrigin.UNKNOWN:
         // fall through
       default:
         return "unknown";
-
     }
   }
 
@@ -44,20 +52,27 @@ public class ImageOriginUtils {
     switch (producerName) {
       case BitmapMemoryCacheGetProducer.PRODUCER_NAME:
       case BitmapMemoryCacheProducer.PRODUCER_NAME:
+      case PostprocessedBitmapMemoryCacheProducer.PRODUCER_NAME:
         return ImageOrigin.MEMORY_BITMAP;
+
       case EncodedMemoryCacheProducer.PRODUCER_NAME:
         return ImageOrigin.MEMORY_ENCODED;
+
       case DiskCacheReadProducer.PRODUCER_NAME:
+      case PartialDiskCacheProducer.PRODUCER_NAME:
         return ImageOrigin.DISK;
+
       case NetworkFetchProducer.PRODUCER_NAME:
         return ImageOrigin.NETWORK;
 
       case DataFetchProducer.PRODUCER_NAME:
-      case LocalFileFetchProducer.PRODUCER_NAME:
-      case LocalResourceFetchProducer.PRODUCER_NAME:
       case LocalAssetFetchProducer.PRODUCER_NAME:
       case LocalContentUriFetchProducer.PRODUCER_NAME:
       case LocalContentUriThumbnailFetchProducer.PRODUCER_NAME:
+      case LocalFileFetchProducer.PRODUCER_NAME:
+      case LocalResourceFetchProducer.PRODUCER_NAME:
+      case LocalVideoThumbnailProducer.PRODUCER_NAME:
+      case QualifiedResourceFetchProducer.PRODUCER_NAME:
         return ImageOrigin.LOCAL;
 
       default:

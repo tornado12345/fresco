@@ -9,14 +9,17 @@ package com.facebook.imagepipeline.datasource;
 
 import com.facebook.common.internal.Preconditions;
 import com.facebook.datasource.AbstractDataSource;
-import com.facebook.imagepipeline.listener.RequestListener;
+import com.facebook.imagepipeline.listener.RequestListener2;
 import com.facebook.imagepipeline.producers.BaseConsumer;
 import com.facebook.imagepipeline.producers.Consumer;
 import com.facebook.imagepipeline.producers.Producer;
+import com.facebook.imagepipeline.producers.ProducerContext;
 import com.facebook.imagepipeline.producers.SettableProducerContext;
 import com.facebook.imagepipeline.request.HasImageRequest;
 import com.facebook.imagepipeline.request.ImageRequest;
 import com.facebook.imagepipeline.systrace.FrescoSystrace;
+import com.facebook.infer.annotation.Nullsafe;
+import java.util.Map;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
@@ -25,30 +28,28 @@ import javax.annotation.concurrent.ThreadSafe;
  *
  * @param <T>
  */
+@Nullsafe(Nullsafe.Mode.STRICT)
 @ThreadSafe
 public abstract class AbstractProducerToDataSourceAdapter<T> extends AbstractDataSource<T>
     implements HasImageRequest {
 
   private final SettableProducerContext mSettableProducerContext;
-  private final RequestListener mRequestListener;
+  private final RequestListener2 mRequestListener;
 
   protected AbstractProducerToDataSourceAdapter(
       Producer<T> producer,
       SettableProducerContext settableProducerContext,
-      RequestListener requestListener) {
+      RequestListener2 requestListener) {
     if (FrescoSystrace.isTracing()) {
       FrescoSystrace.beginSection("AbstractProducerToDataSourceAdapter()");
     }
     mSettableProducerContext = settableProducerContext;
     mRequestListener = requestListener;
+    setInitialExtras();
     if (FrescoSystrace.isTracing()) {
       FrescoSystrace.beginSection("AbstractProducerToDataSourceAdapter()->onRequestStart");
     }
-    mRequestListener.onRequestStart(
-        settableProducerContext.getImageRequest(),
-        mSettableProducerContext.getCallerContext(),
-        mSettableProducerContext.getId(),
-        mSettableProducerContext.isPrefetch());
+    mRequestListener.onRequestStart(mSettableProducerContext);
     if (FrescoSystrace.isTracing()) {
       FrescoSystrace.endSection();
     }
@@ -68,7 +69,8 @@ public abstract class AbstractProducerToDataSourceAdapter<T> extends AbstractDat
     return new BaseConsumer<T>() {
       @Override
       protected void onNewResultImpl(@Nullable T newResult, @Status int status) {
-        AbstractProducerToDataSourceAdapter.this.onNewResultImpl(newResult, status);
+        AbstractProducerToDataSourceAdapter.this.onNewResultImpl(
+            newResult, status, mSettableProducerContext);
       }
 
       @Override
@@ -88,25 +90,22 @@ public abstract class AbstractProducerToDataSourceAdapter<T> extends AbstractDat
     };
   }
 
-  protected void onNewResultImpl(@Nullable T result, int status) {
+  protected void onNewResultImpl(@Nullable T result, int status, ProducerContext producerContext) {
     boolean isLast = BaseConsumer.isLast(status);
-    if (super.setResult(result, isLast)) {
+    if (super.setResult(result, isLast, getExtras(producerContext))) {
       if (isLast) {
-        mRequestListener.onRequestSuccess(
-            mSettableProducerContext.getImageRequest(),
-            mSettableProducerContext.getId(),
-            mSettableProducerContext.isPrefetch());
+        mRequestListener.onRequestSuccess(mSettableProducerContext);
       }
     }
   }
 
+  protected Map<String, Object> getExtras(ProducerContext producerContext) {
+    return producerContext.getExtras();
+  }
+
   private void onFailureImpl(Throwable throwable) {
-    if (super.setFailure(throwable)) {
-      mRequestListener.onRequestFailure(
-          mSettableProducerContext.getImageRequest(),
-          mSettableProducerContext.getId(),
-          throwable,
-          mSettableProducerContext.isPrefetch());
+    if (super.setFailure(throwable, getExtras(mSettableProducerContext))) {
+      mRequestListener.onRequestFailure(mSettableProducerContext, throwable);
     }
   }
 
@@ -125,9 +124,13 @@ public abstract class AbstractProducerToDataSourceAdapter<T> extends AbstractDat
       return false;
     }
     if (!super.isFinished()) {
-      mRequestListener.onRequestCancellation(mSettableProducerContext.getId());
+      mRequestListener.onRequestCancellation(mSettableProducerContext);
       mSettableProducerContext.cancel();
     }
     return true;
+  }
+
+  private void setInitialExtras() {
+    setExtras(mSettableProducerContext.getExtras());
   }
 }

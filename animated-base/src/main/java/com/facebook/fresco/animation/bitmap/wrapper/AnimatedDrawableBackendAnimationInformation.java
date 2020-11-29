@@ -4,16 +4,16 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
+
 package com.facebook.fresco.animation.bitmap.wrapper;
 
 import com.facebook.fresco.animation.backend.AnimationInformation;
 import com.facebook.imagepipeline.animated.base.AnimatedDrawableBackend;
+import com.facebook.infer.annotation.Nullsafe;
 
-/**
- * {@link AnimationInformation} that wraps an {@link AnimatedDrawableBackend}.
- */
-public class AnimatedDrawableBackendAnimationInformation
-    implements AnimationInformation {
+/** {@link AnimationInformation} that wraps an {@link AnimatedDrawableBackend}. */
+@Nullsafe(Nullsafe.Mode.STRICT)
+public class AnimatedDrawableBackendAnimationInformation implements AnimationInformation {
 
   private final AnimatedDrawableBackend mAnimatedDrawableBackend;
 

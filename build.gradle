@@ -1,32 +1,30 @@
+/*
+ * Copyright (c) Facebook, Inc. and its affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 import de.undercouch.gradle.tasks.download.Download
 import org.apache.tools.ant.taskdefs.condition.Os
+import com.facebook.fresco.buildsrc.Deps
+import com.facebook.fresco.buildsrc.GradleDeps
 
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
 
-    ext.versions = [
-            'androidx' : [
-                'annotation' : '1.0.2',
-                'appcompat'  : '1.0.2',
-                'espresso' : '3.1.1',
-                'legacy_support_core_ui' : '1.0.0',
-                'legacy_support_core_utils' : '1.0.0',
-                'preference' : '1.0.0',
-                'recyclerview' : '1.0.0',
-                'test' : '1.1.1',
-            ],
-            'material' : '1.0.0',
-    ]
-
     repositories {
         google()
         jcenter()
+        mavenCentral()
     }
     dependencies {
-        classpath "com.android.tools.build:gradle:${ANDROID_GRADLE_PLUGIN_VERSION}"
-        classpath "com.jfrog.bintray.gradle:gradle-bintray-plugin:${GRADLE_BINTRAY_PLUGIN_VERSION}"
-        classpath "com.github.dcendents:android-maven-gradle-plugin:${ANDROID_MAVEN_GRADLE_PLUGIN_VERSION}"
+        classpath GradleDeps.Android.gradlePlugin
+        classpath GradleDeps.Kotlin.gradlePlugin
+
+        classpath GradleDeps.Publishing.bintrayGradlePlugin
+        classpath GradleDeps.Publishing.androidMavenGradlePlugin
 
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
@@ -38,11 +36,6 @@ plugins {
 }
 
 project.ext {
-    buildToolsVersion = "${BUILD_TOOLS_VERSION}"
-    compileSdkVersion = COMPILE_SDK_VERSION.toInteger()
-    minSdkVersion = MIN_SDK_VERSION
-    samplesMinSdkVersion = SAMPLES_MIN_SDK_VERSION
-    targetSdkVersion = TARGET_SDK_VERSION
     preDexLibs = !project.hasProperty('disablePreDex')
 }
 
@@ -54,7 +47,7 @@ subprojects {
     }
 
     configurations.all {
-        resolutionStrategy.force "com.google.code.findbugs:jsr305:${JSR_305_VERSION}"
+        resolutionStrategy.force Deps.jsr305
     }
 
     task allclean {
@@ -237,7 +230,7 @@ subprojects {
             "https://launchpad.net/ubuntu/+archive/primary/+files/giflib_${GIFLIB_VERSION}.orig.tar.bz2", // The Url for download
             "giflib_${GIFLIB_VERSION}.orig.tar.bz2", // The downloaded file
             'giflib', // The folder where the file is downloaded
-            "giflib-${GIFLIB_VERSION}/lib", // The first dir where we have put our customisation
+            "giflib-${GIFLIB_VERSION}", // The first dir where we have put our customisation
             ['*.c', '*.h', '*.mk'], // Files to compile
             "giflib" // Final destination dir
     )

@@ -9,32 +9,35 @@ package com.facebook.imagepipeline.cache;
 
 import com.facebook.cache.common.CacheKey;
 import com.facebook.common.memory.PooledByteBuffer;
+import com.facebook.infer.annotation.Nullsafe;
 
+@Nullsafe(Nullsafe.Mode.STRICT)
 public class EncodedMemoryCacheFactory {
 
   public static InstrumentedMemoryCache<CacheKey, PooledByteBuffer> get(
-      final CountingMemoryCache<CacheKey, PooledByteBuffer> encodedCountingMemoryCache,
+      final MemoryCache<CacheKey, PooledByteBuffer> encodedMemoryCache,
       final ImageCacheStatsTracker imageCacheStatsTracker) {
 
-    imageCacheStatsTracker.registerEncodedMemoryCache(encodedCountingMemoryCache);
+    imageCacheStatsTracker.registerEncodedMemoryCache(encodedMemoryCache);
 
-    MemoryCacheTracker memoryCacheTracker = new MemoryCacheTracker<CacheKey>() {
-      @Override
-      public void onCacheHit(CacheKey cacheKey) {
-        imageCacheStatsTracker.onMemoryCacheHit(cacheKey);
-      }
+    MemoryCacheTracker memoryCacheTracker =
+        new MemoryCacheTracker<CacheKey>() {
+          @Override
+          public void onCacheHit(CacheKey cacheKey) {
+            imageCacheStatsTracker.onMemoryCacheHit(cacheKey);
+          }
 
-      @Override
-      public void onCacheMiss() {
-        imageCacheStatsTracker.onMemoryCacheMiss();
-      }
+          @Override
+          public void onCacheMiss(CacheKey cacheKey) {
+            imageCacheStatsTracker.onMemoryCacheMiss(cacheKey);
+          }
 
-      @Override
-      public void onCachePut() {
-        imageCacheStatsTracker.onMemoryCachePut();
-      }
-    };
+          @Override
+          public void onCachePut(CacheKey cacheKey) {
+            imageCacheStatsTracker.onMemoryCachePut(cacheKey);
+          }
+        };
 
-    return new InstrumentedMemoryCache<>(encodedCountingMemoryCache, memoryCacheTracker);
+    return new InstrumentedMemoryCache<>(encodedMemoryCache, memoryCacheTracker);
   }
 }

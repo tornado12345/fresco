@@ -4,6 +4,7 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
+
 package com.facebook.drawee.view;
 
 import static com.facebook.drawee.components.DraweeEventTracker.Event;
@@ -28,19 +29,17 @@ import javax.annotation.Nullable;
  * <p>Drawee users, should, as a rule, use {@link DraweeView} or its subclasses. There are
  * situations where custom views are required, however, and this class is for those circumstances.
  *
- * <p>Each {@link DraweeHierarchy} object should be contained in a single instance of this
- * class.
+ * <p>Each {@link DraweeHierarchy} object should be contained in a single instance of this class.
  *
- * <p>Users of this class must call {@link Drawable#setBounds} on the top-level drawable
- * of the DraweeHierarchy. Otherwise the drawable will not be drawn.
+ * <p>Users of this class must call {@link Drawable#setBounds} on the top-level drawable of the
+ * DraweeHierarchy. Otherwise the drawable will not be drawn.
  *
- * <p>The containing view must also call {@link #onDetach()} from its
- * {@link View#onStartTemporaryDetach()} and {@link View#onDetachedFromWindow()} methods. It must
- * call {@link #onAttach} from its {@link View#onFinishTemporaryDetach()} and
- * {@link View#onAttachedToWindow()} methods.
+ * <p>The containing view must also call {@link #onDetach()} from its {@link
+ * View#onStartTemporaryDetach()} and {@link View#onDetachedFromWindow()} methods. It must call
+ * {@link #onAttach} from its {@link View#onFinishTemporaryDetach()} and {@link
+ * View#onAttachedToWindow()} methods.
  */
-public class DraweeHolder<DH extends DraweeHierarchy>
-    implements VisibilityCallback {
+public class DraweeHolder<DH extends DraweeHierarchy> implements VisibilityCallback {
 
   private boolean mIsControllerAttached = false;
   private boolean mIsHolderAttached = false;
@@ -56,19 +55,18 @@ public class DraweeHolder<DH extends DraweeHierarchy>
    * notifies it about activity's onStop and onStart callbacks.
    */
   public static <DH extends DraweeHierarchy> DraweeHolder<DH> create(
-      @Nullable DH hierarchy,
-      Context context) {
+      @Nullable DH hierarchy, Context context) {
     DraweeHolder<DH> holder = new DraweeHolder<DH>(hierarchy);
     holder.registerWithContext(context);
     return holder;
   }
 
   /** For future use. */
-  public void registerWithContext(Context context) {
-  }
+  public void registerWithContext(Context context) {}
 
   /**
    * Creates a new instance of DraweeHolder.
+   *
    * @param hierarchy
    */
   public DraweeHolder(@Nullable DH hierarchy) {
@@ -92,8 +90,7 @@ public class DraweeHolder<DH extends DraweeHierarchy>
   /**
    * Checks whether the view that uses this holder is currently attached to a window.
    *
-   * {@see #onAttach()}
-   * {@see #onDetach()}
+   * <p>{@see #onAttach()} {@see #onDetach()}
    *
    * @return true if the holder is currently attached
    */
@@ -115,6 +112,7 @@ public class DraweeHolder<DH extends DraweeHierarchy>
 
   /**
    * Forwards the touch event to the controller.
+   *
    * @param event touch event to handle
    * @return whether the event was handled or not
    */
@@ -125,9 +123,7 @@ public class DraweeHolder<DH extends DraweeHierarchy>
     return mController.onTouchEvent(event);
   }
 
-  /**
-   * Callback used to notify about top-level-drawable's visibility changes.
-   */
+  /** Callback used to notify about top-level-drawable's visibility changes. */
   @Override
   public void onVisibilityChange(boolean isVisible) {
     if (mIsVisible == isVisible) {
@@ -138,9 +134,7 @@ public class DraweeHolder<DH extends DraweeHierarchy>
     attachOrDetachController();
   }
 
-  /**
-   * Callback used to notify about top-level-drawable being drawn.
-   */
+  /** Callback used to notify about top-level-drawable being drawn. */
   @Override
   public void onDraw() {
     // draw is only expected if the controller is attached
@@ -162,9 +156,7 @@ public class DraweeHolder<DH extends DraweeHierarchy>
     attachOrDetachController();
   }
 
-  /**
-   * Sets the visibility callback to the current top-level-drawable.
-   */
+  /** Sets the visibility callback to the current top-level-drawable. */
   private void setVisibilityCallback(@Nullable VisibilityCallback visibilityCallback) {
     Drawable drawable = getTopLevelDrawable();
     if (drawable instanceof VisibilityAwareDrawable) {
@@ -172,9 +164,7 @@ public class DraweeHolder<DH extends DraweeHierarchy>
     }
   }
 
-  /**
-   * Sets a new controller.
-   */
+  /** Sets a new controller. */
   public void setController(@Nullable DraweeController draweeController) {
     boolean wasAttached = mIsControllerAttached;
     if (wasAttached) {
@@ -199,16 +189,13 @@ public class DraweeHolder<DH extends DraweeHierarchy>
     }
   }
 
-  /**
-   * Gets the controller if set, null otherwise.
-   */
-  @Nullable public DraweeController getController() {
+  /** Gets the controller if set, null otherwise. */
+  @Nullable
+  public DraweeController getController() {
     return mController;
   }
 
-  /**
-   * Sets the drawee hierarchy.
-   */
+  /** Sets the drawee hierarchy. */
   public void setHierarchy(DH hierarchy) {
     mEventTracker.recordEvent(Event.ON_SET_HIERARCHY);
     final boolean isControllerValid = isControllerValid();
@@ -224,16 +211,12 @@ public class DraweeHolder<DH extends DraweeHierarchy>
     }
   }
 
-  /**
-   * Gets the drawee hierarchy if set, throws NPE otherwise.
-   */
+  /** Gets the drawee hierarchy if set, throws NPE otherwise. */
   public DH getHierarchy() {
     return Preconditions.checkNotNull(mHierarchy);
   }
 
-  /**
-   * Returns whether the hierarchy is set or not.
-   */
+  /** Returns whether the hierarchy is set or not. */
   public boolean hasHierarchy() {
     return mHierarchy != null;
   }
@@ -261,8 +244,7 @@ public class DraweeHolder<DH extends DraweeHierarchy>
     }
     mEventTracker.recordEvent(Event.ON_ATTACH_CONTROLLER);
     mIsControllerAttached = true;
-    if (mController != null &&
-        mController.getHierarchy() != null) {
+    if (mController != null && mController.getHierarchy() != null) {
       mController.onAttach();
     }
   }

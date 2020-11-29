@@ -4,6 +4,7 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
+
 package com.facebook.imagepipeline.filter;
 
 import android.content.Context;
@@ -53,6 +54,10 @@ public abstract class RenderScriptBlurFilter {
       blurScript.setInput(allIn);
       blurScript.forEach(allOut);
       allOut.copyTo(dest);
+
+      blurScript.destroy();
+      allIn.destroy();
+      allOut.destroy();
     } finally {
       if (rs != null) {
         rs.destroy();

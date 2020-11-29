@@ -13,16 +13,18 @@ import com.facebook.drawee.view.SimpleDraweeView;
 import com.facebook.imagepipeline.core.ImagePipeline;
 import com.facebook.imagepipeline.core.ImagePipelineConfig;
 import com.facebook.imagepipeline.core.ImagePipelineFactory;
+import com.facebook.imagepipeline.core.NativeCodeSetup;
 import com.facebook.imagepipeline.systrace.FrescoSystrace;
-import com.facebook.soloader.SoLoader;
-import java.io.IOException;
+import com.facebook.soloader.nativeloader.NativeLoader;
+import com.facebook.soloader.nativeloader.SystemDelegate;
+import java.lang.reflect.InvocationTargetException;
 import javax.annotation.Nullable;
 
 /**
  * Fresco entry point.
  *
- * <p/> You must initialize this class before use. The simplest way is to just do
- * {#code Fresco.initialize(Context)}.
+ * <p>You must initialize this class before use. The simplest way is to just do {#code
+ * Fresco.initialize(Context)}.
  */
 public class Fresco {
 
@@ -40,16 +42,24 @@ public class Fresco {
 
   /** Initializes Fresco with the default Drawee config. */
   public static void initialize(
-      Context context,
-      @Nullable ImagePipelineConfig imagePipelineConfig) {
+      Context context, @Nullable ImagePipelineConfig imagePipelineConfig) {
     initialize(context, imagePipelineConfig, null);
+  }
+
+  /** Initializes Fresco with the specified config and native code enabled. */
+  public static void initialize(
+      Context context,
+      @Nullable ImagePipelineConfig imagePipelineConfig,
+      @Nullable DraweeConfig draweeConfig) {
+    initialize(context, imagePipelineConfig, draweeConfig, true);
   }
 
   /** Initializes Fresco with the specified config. */
   public static void initialize(
       Context context,
       @Nullable ImagePipelineConfig imagePipelineConfig,
-      @Nullable DraweeConfig draweeConfig) {
+      @Nullable DraweeConfig draweeConfig,
+      boolean useNativeCode) {
     if (FrescoSystrace.isTracing()) {
       FrescoSystrace.beginSection("Fresco#initialize");
     }
@@ -61,19 +71,34 @@ public class Fresco {
     } else {
       sIsInitialized = true;
     }
-    try {
+
+    NativeCodeSetup.setUseNativeCode(useNativeCode);
+
+    if (!NativeLoader.isInitialized()) {
       if (FrescoSystrace.isTracing()) {
         FrescoSystrace.beginSection("Fresco.initialize->SoLoader.init");
       }
-      SoLoader.init(context, 0);
-      if (FrescoSystrace.isTracing()) {
-        FrescoSystrace.endSection();
+      try {
+        Class<?> clazz =
+            Class.forName("com.facebook.imagepipeline.nativecode.NativeCodeInitializer");
+        clazz.getMethod("init", Context.class).invoke(null, context);
+      } catch (ClassNotFoundException e) {
+        // Failed to initialize SoLoader
+        NativeLoader.init(new SystemDelegate());
+      } catch (IllegalAccessException e) {
+        // Failed to initialize SoLoader
+        NativeLoader.init(new SystemDelegate());
+      } catch (InvocationTargetException e) {
+        // Failed to initialize SoLoader
+        NativeLoader.init(new SystemDelegate());
+      } catch (NoSuchMethodException e) {
+        // Failed to initialize SoLoader
+        NativeLoader.init(new SystemDelegate());
+      } finally {
+        if (FrescoSystrace.isTracing()) {
+          FrescoSystrace.endSection();
+        }
       }
-    } catch (IOException e) {
-      if (FrescoSystrace.isTracing()) {
-        FrescoSystrace.endSection();
-      }
-      throw new RuntimeException("Could not initialize SoLoader", e);
     }
     // we should always use the application context to avoid memory leaks
     context = context.getApplicationContext();

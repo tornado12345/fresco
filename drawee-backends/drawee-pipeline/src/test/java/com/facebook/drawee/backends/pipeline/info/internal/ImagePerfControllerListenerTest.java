@@ -1,15 +1,14 @@
 /*
  * Copyright (c) Facebook, Inc. and its affiliates.
- * All rights reserved.
  *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree. An additional grant
- * of patent rights can be found in the PATENTS file in the same directory.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
  */
+
 package com.facebook.drawee.backends.pipeline.info.internal;
 
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -69,7 +68,8 @@ public class ImagePerfControllerListenerTest {
     expectedNumOfTimestamps++;
 
     verify(mMonotonicClock, times(expectedNumOfTimestamps)).now();
-    verify(mImagePerfMonitor).notifyStatusUpdated(eq(mImagePerfState), eq(ImageLoadStatus.REQUESTED));
+    verify(mImagePerfMonitor)
+        .notifyStatusUpdated(eq(mImagePerfState), eq(ImageLoadStatus.REQUESTED));
     verify(mImagePerfMonitor).notifyStatusUpdated(eq(mImagePerfState), eq(ImageLoadStatus.SUCCESS));
     verify(mImagePerfMonitor)
         .notifyListenersOfVisibilityStateUpdate(eq(mImagePerfState), eq(VisibilityState.VISIBLE));
@@ -103,7 +103,8 @@ public class ImagePerfControllerListenerTest {
     expectedNumOfTimestamps++;
 
     verify(mMonotonicClock, times(expectedNumOfTimestamps)).now();
-    verify(mImagePerfMonitor).notifyStatusUpdated(eq(mImagePerfState), eq(ImageLoadStatus.REQUESTED));
+    verify(mImagePerfMonitor)
+        .notifyStatusUpdated(eq(mImagePerfState), eq(ImageLoadStatus.REQUESTED));
     verify(mImagePerfMonitor).notifyStatusUpdated(eq(mImagePerfState), eq(ImageLoadStatus.ERROR));
     verify(mImagePerfState).setControllerSubmitTimeMs(startTime);
     verify(mImagePerfState).setControllerFailureTimeMs(imageLoadTime);
@@ -125,8 +126,10 @@ public class ImagePerfControllerListenerTest {
     expectedNumOfTimestamps++;
 
     verify(mMonotonicClock, times(expectedNumOfTimestamps)).now();
-    verify(mImagePerfMonitor).notifyStatusUpdated(eq(mImagePerfState), eq(ImageLoadStatus.REQUESTED));
-    verify(mImagePerfMonitor).notifyStatusUpdated(eq(mImagePerfState), eq(ImageLoadStatus.CANCELED));
+    verify(mImagePerfMonitor)
+        .notifyStatusUpdated(eq(mImagePerfState), eq(ImageLoadStatus.REQUESTED));
+    verify(mImagePerfMonitor)
+        .notifyStatusUpdated(eq(mImagePerfState), eq(ImageLoadStatus.CANCELED));
     verify(mImagePerfState).setControllerSubmitTimeMs(startTime);
     verify(mImagePerfState).setControllerCancelTimeMs(imageReleaseTime);
   }
@@ -159,7 +162,8 @@ public class ImagePerfControllerListenerTest {
     expectedNumOfTimestamps++;
 
     verify(mMonotonicClock, times(expectedNumOfTimestamps)).now();
-    verify(mImagePerfMonitor).notifyStatusUpdated(eq(mImagePerfState), eq(ImageLoadStatus.REQUESTED));
+    verify(mImagePerfMonitor)
+        .notifyStatusUpdated(eq(mImagePerfState), eq(ImageLoadStatus.REQUESTED));
     verify(mImagePerfMonitor)
         .notifyStatusUpdated(eq(mImagePerfState), eq(ImageLoadStatus.INTERMEDIATE_AVAILABLE));
     verify(mImagePerfMonitor).notifyStatusUpdated(eq(mImagePerfState), eq(ImageLoadStatus.SUCCESS));
